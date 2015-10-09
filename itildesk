@@ -1,8 +1,92 @@
 #!/usr/bin/env perl
 use Mojolicious::Lite;
 
+sub names {
+  qw(
+    Jack William Hiroto Ren Wei Jie Aarav Aaryan Jing Ying Aadhya Ananya
+    Yuina Hina Ben Louis Emma Mia Charlotte Ruby Michelle Shane Nicholas
+  );
+}
+
+sub desks {
+  (
+    service => {
+      can => {
+        identify => 1,
+        request  => 'engineering',
+        assign   => 1,
+        handover => 'deploy',
+      },
+    },
+    incident => {
+      can => {
+        identify => 1,
+        request  => 'incident',
+        invent   => 1,
+        breakfix => 1,
+        pass     => 'problem',
+      },
+    },
+    problem => {
+      can => {
+        identify   => 1,
+        request    => 'engineering',
+        workaround => 1,
+        handover   => 'deploy',
+      },
+    },
+    deploy => {
+      can => {
+        apply => 1,
+      },
+    },
+  );
+}
+
+sub issue_types {
+  (
+    'Kernel Hung',
+    'Disk Full',
+    'User Cannot Login',
+    'Package Outdated',
+  );
+}
+
+sub service_types {
+  (
+     'Hosting',
+     'Decom',
+     'Change',
+  );
+}
+
+sub new_game {
+  my %desks = desks();
+  my @desknames = keys %desks;
+  use Data::Printer; p %desks;
+  for my $name ( names() ) {
+    my $deskname = $desknames[rand @desknames];
+    my $desk = $desks{$deskname};
+    #$desks[rand @desks]{person}{$name} = 1;
+    #p $desk;
+    $desk->{person}{$name} = 1;
+  }
+  my @issues = issue_types();
+  my @services = service_types();
+  for my $id ( 1..25 ) {
+    my $deskname = $desknames[rand @desknames];
+    my $desk = $desks{$deskname};
+    $desk->{ticket}{$id} = {
+      title      => $issues[rand @issues],
+      difficulty => rand,
+    };
+  }
+  return \%desks;
+}
+
 get '/' => sub {
   my $c = shift;
+  $c->stash( game => new_game() );
   $c->render(template => 'index');
 };
 
