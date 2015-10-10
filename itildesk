@@ -282,17 +282,27 @@ start('identify',(keys %{$_game->{desk}{incident}{person}})[0], '2') ;
 post '/update' => sub {
   my $c = shift;
 
-   turn();
-   #for my $key ( qw(desk ticket pass) ) {
-   #  if ( my $val = $c->param($key) ) {
-   #    warn sprintf "*** %s=%s\n", $key, $val;
-   #  }
-   #}
-   if ( $c->param('pass') ) {
-     my $resp = pass( $c->param('desk'), $c->param('ticket') );
-     $c->flash( error => $resp->{error} ) if ref $resp;
-   }
-   $c->redirect_to($c->url_for('/'));
+  turn();
+  #for my $key ( qw(desk ticket pass) ) {
+  #  if ( my $val = $c->param($key) ) {
+  #    warn sprintf "*** %s=%s\n", $key, $val;
+  #  }
+  #}
+  if ( my $desk = $c->param('desk') ) {
+    if ( my $ticket = $c->param('ticket') ) {
+      if ( $c->param('pass') ) {
+        my $resp = pass( $desk, $ticket );
+        $c->flash( error => $resp->{error} ) if ref $resp;
+      }
+      if ( my $person = $c->param('person') ) {
+        if ( $c->param('identify') ) {
+          start('identify', $person, $ticket);
+        }
+      }
+    }
+  }
+  
+  $c->redirect_to($c->url_for('/'));
 } => 'update';
 
 get '/' => sub {
