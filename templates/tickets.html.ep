@@ -10,7 +10,7 @@
   </thead>
   <tbody>
     % my $tickets=$desk->{ticket};
-    % my @all_tickets=keys $tickets;
+    % my @all_tickets=keys %$tickets;
     % my @assigned_tickets=();
     % my @unassigned_tickets=();
     % for my $p (keys %{$desk->{person}}) {
