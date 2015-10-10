@@ -9,12 +9,12 @@
   <tbody>
     % my $people=$desk->{person};
     % my $tickets=$desk->{ticket};
-    % for my $id ( keys %$people ) {
+    % for my $id ( sort keys %$people ) {
     %   if (exists $desk->{person}{$id}{ticket}) {
     <tr>
       % my $ticketid=$desk->{person}{$id}{ticket};
       <th><%= $ticketid %></th>
-      <td>Something</td>
+      <td><%= $desk->{ticket}{$ticketid}{title} %></td>
       <td><%= $id %></td>
     </tr>
     % }
