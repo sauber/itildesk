@@ -1,24 +1,35 @@
-<h3><%= ucfirst $deskname %> Desk</h3>
-<form action="<%= url_for 'update' %>" method=POST>
-<table>
-  <thead>
-    <tr>
-      <th>Tickets</th>
-      <th>People</th>
-      <th>Solutions</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><%= include 'tickets', tickets=>$desk->{ticket} %></td>
-      <td><%= include 'people', people=>$desk->{person} %></td>
-      <td><%= include 'solutions', solutions=>$desk->{solutions} %></td>
-    </tr>
-  </tbody>
-</table>
-<input type=hidden name="desk" value="<%= $deskname %>" />
-<input type=submit name="identify" value="Identify" />
-<input type=submit name="pass" value="Pass" />
-<input type=submit name="assign" value="Assign" />
-
-</form>
+<div style="background-color: #f0f0f0; border: 2px solid white;">
+  <h3><%= ucfirst $deskname %> Desk</h3>
+  <form action="<%= url_for 'update' %>" method=POST>
+    <table>
+      <thead>
+	<tr>
+	  <th>Tickets</th>
+	  <th>People</th>
+	  <th>Solutions</th>
+	</tr>
+      </thead>
+      <tbody>
+	<tr>
+	  <!-- Show assigned tickets here with ticket number, name, person assigned -->
+	  <td colspan="2">
+	    <!-- <%= include 'assignedpeople', people=>$desk->{person} %> -->
+	    Here are assigned tickets
+	  </td>
+	  <td rowspan="3" style="background-color: #f0f0ff;">
+	    <%= include 'solutions', solutions=>$desk->{solution} %>
+	  </td>
+	</tr>
+	<tr>
+	  <td style="background-color: #f0fff0;"><%= include 'tickets', tickets=>$desk->{ticket} %></td>
+	  <td style="background-color: #fff0f0;"><%= include 'people', people=>$desk->{person} %></td>
+	</tr>
+      </tbody>
+    </table>
+    <input type=hidden name="desk" value="<%= $deskname %>" />
+    <input type=submit name="identify" value="Identify" />
+    <input type=submit name="pass" value="Pass" />
+    <input type=submit name="assign" value="Assign" />
+    
+  </form>
+</div>
