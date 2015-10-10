@@ -189,6 +189,11 @@ sub create_service {
   $_game->{desk}{$deskname}{ticket}{++$_id_counter} = $ticket;
 }
 
+
+########################################################################
+### Actions
+########################################################################
+
 # Pass a ticket into another queue
 #
 sub pass {
@@ -205,16 +210,16 @@ sub pass {
   my $ticket = $curdesk->{ticket}{$ticket_id};
   return {error=>"Ticket $ticket_id is not on $deskname desk"} unless $ticket;
 
-  # Remove current assignment TODO
-  #if ( $ticket->{action} ) {
-  #  for my $action ( keys %{$ticket->{action} ) {
-  #    if ( $ticket->{action}{$action}{status} eq 'active' ) {
-  #      my $person_name = $ticket->{action}{$action}{person};
-  #      delete $ticket->{action}{$action};
-  #      delete $curdesk->{person}{$person_name}{ticket};
-  #    }
-  #  }
-  #}
+  # Remove current assignment
+  if ( $ticket->{action} ) {
+    for my $action ( keys %{$ticket->{action}} ) {
+      if ( $ticket->{action}{$action}{status} eq 'active' ) {
+        my $person_name = $ticket->{action}{$action}{person};
+        delete $ticket->{action}{$action};
+        delete $curdesk->{person}{$person_name}{ticket};
+      }
+    }
+  }
 
   # Remove from desk
   delete $curdesk->{ticket}{$ticket_id};
@@ -222,11 +227,6 @@ sub pass {
   # Add to desk
   $_game->{desk}{$target_deskname}{ticket}{$ticket_id} = $ticket;
 }
-
-
-########################################################################
-### Actions
-########################################################################
 
 # Start identification of a ticket
 #
