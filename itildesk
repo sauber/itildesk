@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 
 use Mojolicious::Lite;
+use Time::HiRes qw(time);
 
 ########################################################################
 ### Create a New Game
@@ -195,7 +196,7 @@ sub start {
     #$desk->{person}{$person_name}{ticket} = $desk->{ticket}{$ticket_id};
     #$desk->{ticket}{$ticket_id}{person} = $desk->{person}{$person_name};
     # XXX consider solution efficiency
-    my $duration = $ticket->{difficulty} / $person->{skill};
+    my $duration = 10 * $ticket->{difficulty} / $person->{skill};
     $ticket->{action}{$action} = {
       start => time(),
       person => $person,
@@ -242,6 +243,24 @@ sub enlist {
 
 
 ########################################################################
+### Game Maintenance
+########################################################################
+
+# Maintenance before updating
+#
+sub turn {
+  # Update status to done for completed actions 
+  for my $desk ( values %{$_game->{desk}} ) {
+    for my $ticket ( values %{$desk->{ticket}} ) {
+      for my $action ( values %{$ticket->{action}} ) {
+        $action->{status} = 'done' if $action->{end} < time();
+      }
+    }
+  }
+}
+
+
+########################################################################
 ### Web Server
 ########################################################################
 
@@ -256,16 +275,13 @@ start('identify',(keys %{$_game->{desk}{incident}{person}})[0], '2') ;
 
 post '/update' => sub {
   my $c = shift;
-   #my $resp = pass( $c->param('desk'), $c->param('ticket') );
-   #$c->flash( error => $resp->{error} ) if ref $resp;
-   #for my $key ( $c->param->names ) {
-   #  warn sprintf "*** $key=%s\n", $c->param($key);
+
+   turn();
+   #for my $key ( qw(desk ticket pass) ) {
+   #  if ( my $val = $c->param($key) ) {
+   #    warn sprintf "*** %s=%s\n", $key, $val;
+   #  }
    #}
-   for my $key ( qw(desk ticket pass) ) {
-     if ( my $val = $c->param($key) ) {
-       warn sprintf "*** %s=%s\n", $key, $val;
-     }
-   }
    if ( $c->param('pass') ) {
      my $resp = pass( $c->param('desk'), $c->param('ticket') );
      $c->flash( error => $resp->{error} ) if ref $resp;
@@ -275,6 +291,8 @@ post '/update' => sub {
 
 get '/' => sub {
   my $c = shift;
+
+  turn();
   $c->stash( game => $_game );
   $c->render(template => 'index');
 } => 'índex';
