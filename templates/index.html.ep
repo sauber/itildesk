@@ -7,7 +7,7 @@
 <h1>Welcome to ITIL Desk</h1>
 
 % for my $deskname ( sort keys %{$game->{desk}} ) {
-<span style="display: inline-block"><%= include 'desk', deskname=>$deskname, desk=>$game->{desk}{$deskname} %></span>
+<span style="display: inline-block"><%= include 'desk', deskname=>$deskname, desk=>$game->{desk}{$deskname} %></span><br>
 % }
 
 <hr />
