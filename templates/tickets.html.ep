@@ -5,14 +5,12 @@
       <th>Select</th>
       <th>ID</th>
       <th>Title</th>
-      <th>Solution</th>
     </tr>
   </thead>
   <tbody>
     % my $tickets=$desk->{ticket};
     % my @all_tickets=keys %$tickets;
     % my @assigned_tickets=();
-    % my @unassigned_tickets=();
     % for my $p (keys %{$desk->{person}}) {
     %   if (exists $desk->{person}{$p}{ticket}) {
     %     my $a=$desk->{person}{$p}{ticket};
@@ -20,7 +18,6 @@
     %   }
     % }
     % # Delete ticket $a from @all_tickets;
-    % @unassigned_tickets=@all_tickets;
     
     % for my $t ( sort @all_tickets ) {
     %   my $already_assigned=0;
@@ -36,8 +33,6 @@
 	% } else {
 	<td><%= $tickets->{$t}{title} %></td>
 	% }
-	<td>(<%= $tickets->{$t}{solution} %>)</td>
-	<td />
       </tr>
       % }
 %   }
