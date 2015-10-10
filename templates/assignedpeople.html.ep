@@ -1,0 +1,25 @@
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Title</th>
+      <th>Solution</th>
+      <th>Engineer</th>
+    </tr>
+  </thead>
+  <tbody>
+    % my $people=$desk->{person};
+    % my $tickets=$desk->{ticket};
+    % for my $id ( keys %$people ) {
+    %   if (exists $desk->{person}{$id}{ticket}) {
+    <tr>
+      % my $ticketid=$desk->{person}{$id}{ticket};
+      <th><%= $ticketid %></th>
+      <td>Something</td>
+      <td><%= $desk->{ticket}{$ticketid}{solution} %></td>
+      <td><%= $id %></td>
+    </tr>
+    % }
+% }
+  </tbody>
+</table>

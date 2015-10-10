@@ -1,3 +1,4 @@
+<!-- show unassigned tickets -->
 <table>
   <thead>
     <tr>
@@ -10,15 +11,24 @@
   </thead>
   <tbody>
 % for my $id ( keys %$tickets ) {
+%   my $attrib=$tickets->{$id};
 %   my $ticket = $tickets->{$id};
-    <tr>
-      <td><input type=radio value="<%= $id %>" name="ticket" /></td>
-      <th><%= $id %></th>
-      <td />
-      <td><%= $ticket->{solution} %>
-      <td><%= sprintf "%.02f", $ticket->{difficulty} %>
-      <td />
-    </tr>
+%   my $is_active=0;
+%   for my $act ( keys %$ticket ) {
+%     if (exists $ticket->{action}{identify}{status}) {
+%       $is_active = 1 if ( $ticket->{actrion}{identify}{status} == "active" );
+%     }
+%   }
+%   if ($is_active == 0) {
+      <tr>
+        <td><input type=radio value="<%= $id %>" name="ticket" /></td>
+	<th><%= $id %></th>
+	<td>Something2</td>
+	<td><%= $ticket->{solution} %></td>
+	<td><%= sprintf "%.02f", $ticket->{difficulty} %></td>
+	<td />
+      </tr>
+%   }
 % }
   </tbody>
 </table>
