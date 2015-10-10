@@ -2,6 +2,7 @@
 
 use Mojolicious::Lite;
 use Time::HiRes qw(time);
+use Clone 'clone';
 
 
 ########################################################################
@@ -25,6 +26,7 @@ sub new_people {
 sub new_desks {
   service => {
     action => {
+      transfer => 1,
       identify => 1,
       request  => 'engineering',
       assign   => 1,
@@ -33,6 +35,7 @@ sub new_desks {
   },
   incident => {
     action => {
+      transfer => 1,
       identify => 1,
       request  => 'incident',
       invent   => 1,
@@ -42,6 +45,7 @@ sub new_desks {
   },
   problem => {
     action => {
+      transfer   => 1,
       identify   => 1,
       request    => 'engineering',
       workaround => 1,
@@ -50,12 +54,22 @@ sub new_desks {
   },
   deploy => {
     action => {
-      apply => 1,
+      transfer => 1,
+      apply    => 1,
     },
   },
   engineering => {
     action => {
-      assign => 1,
+      transfer => 1,
+      assign   => 1,
+    }
+  },
+  capacity => {
+    action => {
+      transfer  => 1,
+      assign    => 1,
+      increase  => 1,
+      descrease => 1,
     }
   },
 }
@@ -110,6 +124,25 @@ sub new_game {
 ### Tickets
 ########################################################################
 
+# Random title for a ticket
+#
+sub create_title {
+  my @part = qw(all on some a just no again);
+  my @adj  = qw(weird known expected spurious weak new old critical);
+  my @comp = qw(issue error occurence invoke situation full);
+  my @name = (sprintf "0x%s%s%s%s", map chr(64+32*rand), 1..4);
+  my @dir  = qw(for on from with by);
+  my @obj  = qw(user device disk cpu ram process network server nic kernel package password);
+
+  return ucfirst join ' ', 
+    $part[rand @part],
+    $adj [rand @adj ],
+    $comp[rand @comp],
+    $name[rand @name],
+    $dir [rand @dir ],
+    $obj [rand @obj ],
+}
+
 # Add a new issue into a desk
 #
 our $_id_counter;
@@ -125,6 +158,7 @@ sub create_issue {
   )[0];
   # Create ticket
   my $ticket = {
+    title      => create_title(),
     request    => 'issue',
     solution   => $type,
     difficulty => $_game->{issue_types}{$type}{difficulty},
@@ -179,38 +213,44 @@ sub pass {
 
 
 ########################################################################
-### Assignments Ticket/Person
+### Actions
 ########################################################################
 
-# Assign ticket to person and vice versa
+# Start identification of a ticket
 #
-sub start {
-  my($action,$person_name,$ticket_id) = @_;
+sub identify {
+  my($deskname, $person_name, $ticket_id) = @_;
 
   # Remove current assignment
   #
   #unassign($person_name,$ticket_id);
 
-  # Find correct desk
-  for my $desk ( values %{$_game->{desk}} ) {
-    next unless my $person = $desk->{person}{$person_name}
-            and my $ticket = $desk->{ticket}{$ticket_id};
-    #$desk->{person}{$person_name}{ticket} = $desk->{ticket}{$ticket_id};
-    #$desk->{ticket}{$ticket_id}{person} = $desk->{person}{$person_name};
-    # XXX consider solution efficiency
-    my $duration = 10 * $ticket->{difficulty} / $person->{skill};
-    $ticket->{action}{$action} = {
-      start => time(),
-      person => $person_name,
-      status => 'active',
-      end => time()+$duration,
-    };
+  # Confirm person and ticket on desk
+  my $desk = $_game->{desk}{$deskname};
+  return
+    {error=>"Person $person_name and ticket $ticket_id not found on same desk"}
+    unless my $person = $desk->{person}{$person_name}
+       and my $ticket = $desk->{ticket}{$ticket_id};
 
-    $person->{ticket} = $ticket_id;
-    
-    return;
-  }
-  return {error=>"Person $person_name and ticket $ticket_id not found on same desk"};
+  # Already identified
+  return {error=>"Ticket $ticket_id already identified"}
+    if defined $ticket->{action}{identify}{status}
+           and $ticket->{action}{identify}{status} eq 'done';
+
+  # TODO already started
+
+  # Start action
+  my $duration = 10 * $ticket->{difficulty} / $person->{skill};
+  $ticket->{action}{identify} = {
+    start => time(),
+    person => $person_name,
+    status => 'active',
+    end => time()+$duration,
+  };
+
+  # Mark person as working
+  $person->{ticket} = $ticket_id;
+  return 'OK';
 }
 
 # Remove a ticket assignment (it may not exist in the first place
@@ -251,12 +291,20 @@ sub enlist {
 # Maintenance before updating
 #
 sub turn {
+  # Duration since last turn
+  my $now = time();
+  my $last = $_game->{updated};
+  $_game->{updated} = $now;
+  my $duration = $now - $last;
+
   # Change status to done for completed actions 
   for my $desk ( values %{$_game->{desk}} ) {
+    next unless $desk->{ticket};
     for my $ticket ( values %{$desk->{ticket}} ) {
+      next unless $ticket->{action};
       for my $action ( values %{$ticket->{action}} ) {
         if ( $action->{status} eq 'active') {
-          if ( $action->{end} < time() ) {
+          if ( $action->{end} < $now ) {
             $action->{status} = 'done';
             my $person_name = $action->{person};
             delete $desk->{person}{$person_name}{ticket};
@@ -265,6 +313,9 @@ sub turn {
       }
     }
   }
+
+  # TODO People skill up or down
+  # TODO Solution efficiency up or down
 }
 
 
@@ -279,7 +330,7 @@ create_issue('incident') for 1..5;
 create_service('service') for 1..5;
 pass('incident', 1);
 enlist('incident', 'Kernel Hung') for 1..2;
-start('identify',(keys %{$_game->{desk}{incident}{person}})[0], '2') ;
+identify('incident', (keys %{$_game->{desk}{incident}{person}})[0], '2') ;
 
 post '/update' => sub {
   my $c = shift;
@@ -290,20 +341,21 @@ post '/update' => sub {
   #    warn sprintf "*** %s=%s\n", $key, $val;
   #  }
   #}
+  my $resp = {error => 'Missing data, nothing done'};
   if ( my $desk = $c->param('desk') ) {
     if ( my $ticket = $c->param('ticket') ) {
       if ( $c->param('pass') ) {
-        my $resp = pass( $desk, $ticket );
-        $c->flash( error => $resp->{error} ) if ref $resp;
+        $resp = pass( $desk, $ticket );
       }
       if ( my $person = $c->param('person') ) {
         if ( $c->param('identify') ) {
-          start('identify', $person, $ticket);
+          $resp = identify($desk, $person, $ticket);
         }
       }
     }
   }
   
+  $c->flash( error => $resp->{error} ) if ref $resp;
   $c->redirect_to($c->url_for('/'));
 } => 'update';
 
@@ -311,7 +363,7 @@ get '/' => sub {
   my $c = shift;
 
   turn();
-  $c->stash( game => $_game );
+  $c->stash( game => clone $_game );
   $c->render(template => 'index');
 } => 'índex';
 
