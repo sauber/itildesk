@@ -243,10 +243,10 @@ sub identify {
        and my $ticket = $desk->{ticket}{$ticket_id};
 
   # Already identified or being identified
-  if ( my $identify = $ticket->{action}{identify} ) {
-    if ( $identify->{status} eq 'done') {
+  if ( my $action = $ticket->{action}{identify} ) {
+    if ( $action->{status} eq 'done') {
       return {error=>"Ticket $ticket_id already identified"};
-    } elsif ( $identify->{person} eq $person_name ) {
+    } elsif ( $action->{person} eq $person_name ) {
       return {error=>"$person_name already identifying ticket $ticket_id"};
     } else {
       # Cancel work
@@ -267,6 +267,56 @@ sub identify {
   # Mark person as working
   $person->{ticket} = $ticket_id;
   return 'OK';
+}
+
+# Apply breakfix
+#
+sub breakfix {
+  my($deskname, $person_name, $ticket_id, $solution) = @_;
+
+  # Confirm person and ticket on desk
+  my $desk = $_game->{desk}{$deskname};
+  return
+    {error=>"Person $person_name and ticket $ticket_id not found on same desk"}
+    unless my $person = $desk->{person}{$person_name}
+       and my $ticket = $desk->{ticket}{$ticket_id};
+
+  return
+    { error=>"Cause not identified for ticket $ticket_id" }
+    unless $ticket->{show_solution};
+
+  return
+    { error=>"$solution is wrong solution for ticket $ticket_id"}
+    if $solution ne $ticket->{solution};
+
+  # Already breakfixed or being breakfixed
+  if ( my $action = $ticket->{action}{breakfix} ) {
+    if ( $action->{status} eq 'done') {
+      return {error=>"Ticket $ticket_id already breakfixed"};
+    } elsif ( $action->{person} eq $person_name ) {
+      return {error=>"$person_name already breakfixing ticket $ticket_id"};
+    } else {
+      # Cancel work
+      delete $desk->{person}{$person_name}{ticket};
+      delete $ticket->{action}{identify};
+    }
+  }
+
+  # Start identify action
+  my $efficiency = $desk->{solution}{$solution}{efficiency};
+  my $duration = 10 * $ticket->{difficulty} / ( $person->{skill} * $efficiency );
+  $ticket->{action}{breakfix} = {
+    start  => time(),
+    person => $person_name,
+    status => 'active',
+    end    => time()+$duration,
+  };
+
+  # Mark person as working
+  $person->{ticket} = $ticket_id;
+  #return 'OK';
+  return { error=>"$person_name is applying breakfix to ticket $ticket_id"};
+
 }
 
 # Kick a person over to different desk
@@ -295,8 +345,6 @@ sub transfer {
   }
 
   # Pick random new desk
-  #my($newdesk) =
-  #  map $_game->{desk}{$_},
   my($newdeskname) =
     sort { rand() <=> rand() }
     grep { $_ ne $deskname }
@@ -343,7 +391,8 @@ sub turn {
   # Change status to done for completed actions 
   for my $desk ( values %{$_game->{desk}} ) {
     next unless $desk->{ticket};
-    for my $ticket ( values %{$desk->{ticket}} ) {
+    for my $ticket_id ( keys %{$desk->{ticket}} ) {
+      my $ticket = $desk->{ticket}{$ticket_id};
       next unless $ticket->{action};
       for my $action_name ( keys %{$ticket->{action}} ) {
         my $action = $ticket->{action}{$action_name};
@@ -352,7 +401,11 @@ sub turn {
             $action->{status} = 'done';
             my $person_name = $action->{person};
             delete $desk->{person}{$person_name}{ticket};
-            $ticket->{show_solution}=1 if $action_name eq 'identify';
+            if ( $action_name eq 'identify' ) {
+              $ticket->{show_solution} = 1;
+            } elsif ( $action_name eq 'breakfix') {
+              delete $desk->{ticket}{$ticket_id};
+            }
           }
         }
       }
@@ -400,6 +453,9 @@ post '/update' => sub {
       if ( my $person = $c->param('person') ) {
         if ( $c->param('identify') ) {
           $resp = identify($desk, $person, $ticket);
+        }
+        if ( $c->param('breakfix') and my $solution = $c->param('solution') ) {
+          $resp = breakfix($desk, $person, $ticket, $solution);
         }
       }
     } elsif ( my $person = $c->param('person') ) {
