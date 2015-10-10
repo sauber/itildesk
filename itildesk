@@ -194,18 +194,30 @@ sub create_service {
 sub pass {
   my($deskname,$ticket_id) = @_;
 
+  # Current desk
+  my $curdesk = $_game->{desk}{$deskname};
+
   # Find new desk
-  my $target_deskname = $_game->{desk}{$deskname}{action}{pass};
+  my $target_deskname = $curdesk->{action}{pass};
   return {error=>"$deskname desk cannot pass tickets"} unless $target_deskname;
 
   # Find ticket
-  my $ticket = $_game->{desk}{$deskname}{ticket}{$ticket_id};
+  my $ticket = $curdesk->{ticket}{$ticket_id};
   return {error=>"Ticket $ticket_id is not on $deskname desk"} unless $ticket;
 
   # Remove current assignment TODO
+  #if ( $ticket->{action} ) {
+  #  for my $action ( keys %{$ticket->{action} ) {
+  #    if ( $ticket->{action}{$action}{status} eq 'active' ) {
+  #      my $person_name = $ticket->{action}{$action}{person};
+  #      delete $ticket->{action}{$action};
+  #      delete $curdesk->{person}{$person_name}{ticket};
+  #    }
+  #  }
+  #}
 
   # Remove from desk
-  delete $_game->{desk}{$deskname}{ticket}{$ticket_id};
+  delete $curdesk->{ticket}{$ticket_id};
 
   # Add to desk
   $_game->{desk}{$target_deskname}{ticket}{$ticket_id} = $ticket;
@@ -266,6 +278,14 @@ sub identify {
 #  }
 #}
 
+# Whatever a person is working on, cancel it
+#
+sub cancel {
+  my($person_name) = @_;
+
+  #my($desk) = grep 
+}
+
 
 ########################################################################
 ### Solutions
@@ -302,12 +322,14 @@ sub turn {
     next unless $desk->{ticket};
     for my $ticket ( values %{$desk->{ticket}} ) {
       next unless $ticket->{action};
-      for my $action ( values %{$ticket->{action}} ) {
+      for my $action_name ( keys %{$ticket->{action}} ) {
+        my $action = $ticket->{action}{$action_name};
         if ( $action->{status} eq 'active') {
           if ( $action->{end} < $now ) {
             $action->{status} = 'done';
             my $person_name = $action->{person};
             delete $desk->{person}{$person_name}{ticket};
+            $ticket->{show_solution}=1 if $action_name eq 'identify';
           }
         }
       }
