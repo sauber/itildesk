@@ -1,0 +1,22 @@
+<table>
+  <thead>
+    <tr>
+      <th>Select</th>
+      <th>Name</th>
+      <th>Skill</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+% for my $id ( keys %$people ) {
+%   my $person = $people->{$id};
+    <tr>
+      <td><input type=radio value="<%= $id %>" name="person" /></td>
+      <th><%= $id %></th>
+      <td />
+      <td><%= sprintf "%.02f", $person->{skill} %>
+      <td />
+    </tr>
+% }
+  </tbody>
+</table>
