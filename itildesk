@@ -92,17 +92,6 @@ sub new_game {
   $_game->{desks} = \%desks;
   $_game->{issue_types} = { new_issue_types() };
   $_game->{service_types} = { new_service_types() };
-  #my @issues = issue_types();
-  #my @services = service_types();
-  #for my $id ( 1..25 ) {
-  #  my $deskname = $desknames[rand @desknames];
-  #  my $desk = $desks{$deskname};
-  #  $desk->{ticket}{$id} = {
-  #    title      => $issues[rand @issues],
-  #    difficulty => rand,
-  #  };
-  #}
-  return \%desks;
 }
 
 ########################################################################
@@ -111,29 +100,31 @@ sub new_game {
 
 # Add a new issue into a desk
 #
+our $_id_counter;
 sub create_issue {
   my($deskname) = @_;
-  state $id_counter;
 
-  # Pick ticket based on frequency
+  # Pick ticket type based on frequency
   my $type = (
     map $_->[0],
     sort { $b->[1] <=> $a->[1] }
     map [ $_, $_game->{issue_types}{$_}{frequency}*rand ],
     keys %{$_game->{issue_types}}
   )[0];
-  $_game->{desks}{$deskname}{ticket}{++$id_counter} = {
+  # Create ticket
+  my $ticket = {
     request    => 'issue',
     solution   => $type,
     difficulty => $_game->{issue_types}{$type}{difficulty},
   };
+  # Place ticket on desk
+  $_game->{desks}{$deskname}{ticket}{++$_id_counter} = $ticket;
 }
 
 # Add a new issue into a desk
 #
 sub create_service {
   my($deskname) = @_;
-  state $id_counter;
 
   # Pick ticket based on frequency
   my $type = (
@@ -142,21 +133,36 @@ sub create_service {
     map [ $_, $_game->{service_types}{$_}{frequency}*rand ],
     keys %{$_game->{service_types}}
   )[0];
-  $_game->{desks}{$deskname}{ticket}{++$id_counter} = {
+  # Create ticket
+  my $ticket = {
     request    => 'service',
     solution   => $type,
     difficulty => $_game->{service_types}{$type}{difficulty},
   };
+  # Place ticket on desk
+  $_game->{desks}{$deskname}{ticket}{++$_id_counter} = $ticket;
 }
 
-# Pass a ticket to another queue
+# Pass a ticket into another queue
 #
 sub pass {
-  my($console_name,$ticket_id) = @_;
+  my($deskname,$ticket_id) = @_;
 
-  # Remove current assignment
+  # Find new desk
+  my $target_deskname = $_game->{desks}{$deskname}{can}{pass};
+  return {error=>"$deskname desk cannot pass tickets"} unless $target_deskname;
 
-  # Pass to new console
+  # Find ticket
+  my $ticket = $_game->{desks}{$deskname}{ticket}{$ticket_id};
+  return {error=>"Ticket $ticket_id is not on $deskname desk"} unless $ticket;
+
+  # Remove current assignment TODO
+
+  # Remove from desk
+  delete $_game->{desks}{$deskname}{ticket}{$ticket_id};
+
+  # Add to desk
+  $_game->{desks}{$target_deskname}{ticket}{$ticket_id} = $ticket;
   
 }
 
@@ -167,13 +173,21 @@ sub pass {
 app->secrets(['litedesk secret passphrase goes here']);
 
 new_game();
-create_issue('incident') for 1..10;
-create_service('service') for 1..10;
+create_issue('incident') for 1..5;
+create_service('service') for 1..5;
+pass('incident', 1);
+
+post '/pass' => sub {
+  my $c = shift;
+   my $resp = pass( $c->param('desk'), $c->param('ticket') );
+   $c->flash( error => $resp->{error} ) if ref $resp;
+   $c->redirect_to('index');
+} => 'pass';
 
 get '/' => sub {
   my $c = shift;
   $c->stash( game => $_game );
   $c->render(template => 'index');
-};
+} => 'índex';
 
 app->start;
