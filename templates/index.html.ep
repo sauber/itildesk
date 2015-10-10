@@ -4,3 +4,7 @@
 <pre>
 %= dumper $game
 </pre>
+Desk name:
+%= (keys %{$game->{desks}})[0]
+<br />
+Desk Name: <%= (keys %{$game->{desks}})[1] %><br />
