@@ -1,92 +1,178 @@
 #!/usr/bin/env perl
+
 use Mojolicious::Lite;
 
-sub names {
+########################################################################
+### Create a New Game
+########################################################################
+
+our $_game;
+
+# Create people seeded with random skill level
+#
+sub new_people {
+  map { $_ => { skill => rand }}
   qw(
     Jack William Hiroto Ren Wei Jie Aarav Aaryan Jing Ying Aadhya Ananya
     Yuina Hina Ben Louis Emma Mia Charlotte Ruby Michelle Shane Nicholas
-  );
+  )
 }
 
-sub desks {
-  (
-    service => {
-      can => {
-        identify => 1,
-        request  => 'engineering',
-        assign   => 1,
-        handover => 'deploy',
-      },
+# Create desks with abilities
+#
+sub new_desks {
+  service => {
+    can => {
+      identify => 1,
+      request  => 'engineering',
+      assign   => 1,
+      handover => 'deploy',
     },
-    incident => {
-      can => {
-        identify => 1,
-        request  => 'incident',
-        invent   => 1,
-        breakfix => 1,
-        pass     => 'problem',
-      },
+  },
+  incident => {
+    can => {
+      identify => 1,
+      request  => 'incident',
+      invent   => 1,
+      breakfix => 1,
+      pass     => 'problem',
     },
-    problem => {
-      can => {
-        identify   => 1,
-        request    => 'engineering',
-        workaround => 1,
-        handover   => 'deploy',
-      },
+  },
+  problem => {
+    can => {
+      identify   => 1,
+      request    => 'engineering',
+      workaround => 1,
+      handover   => 'deploy',
     },
-    deploy => {
-      can => {
-        apply => 1,
-      },
+  },
+  deploy => {
+    can => {
+      apply => 1,
     },
-  );
+  };
 }
 
-sub issue_types {
-  (
-    'Kernel Hung',
-    'Disk Full',
-    'User Cannot Login',
-    'Package Outdated',
-  );
+# Create issue seeded with difficulty and frequency
+#
+sub new_issue_types {
+  map { $_ => { frequency => rand, difficulty => rand } }
+   'Kernel Hung',
+   'Disk Full',
+   'User Cannot Login',
+   'Package Outdated',
 }
 
-sub service_types {
-  (
-     'Hosting',
-     'Decom',
-     'Change',
-  );
+# Create type of issues seeded with difficulty and frequency
+#
+sub new_service_types {
+  map { $_ => { frequency => rand, difficulty => rand } }
+   'Hosting',
+   'Decom',
+   'Change',
 }
 
+# Create a new randomly seeded game
+#
 sub new_game {
-  my %desks = desks();
+  my %desks = new_desks();
+  my %people = new_people();
   my @desknames = keys %desks;
-  use Data::Printer; p %desks;
-  for my $name ( names() ) {
+  #use Data::Printer; p %desks;
+
+  # Randomly distribute people to desks
+  #
+  while ( my($name,$attr) = each %people ) {
+    # Random desk
     my $deskname = $desknames[rand @desknames];
     my $desk = $desks{$deskname};
-    #$desks[rand @desks]{person}{$name} = 1;
-    #p $desk;
-    $desk->{person}{$name} = 1;
+    $desk->{person}{$name} = $attr;
   }
-  my @issues = issue_types();
-  my @services = service_types();
-  for my $id ( 1..25 ) {
-    my $deskname = $desknames[rand @desknames];
-    my $desk = $desks{$deskname};
-    $desk->{ticket}{$id} = {
-      title      => $issues[rand @issues],
-      difficulty => rand,
-    };
-  }
+
+  $_game->{desks} = \%desks;
+  $_game->{issue_types} = { new_issue_types() };
+  $_game->{service_types} = { new_service_types() };
+  #my @issues = issue_types();
+  #my @services = service_types();
+  #for my $id ( 1..25 ) {
+  #  my $deskname = $desknames[rand @desknames];
+  #  my $desk = $desks{$deskname};
+  #  $desk->{ticket}{$id} = {
+  #    title      => $issues[rand @issues],
+  #    difficulty => rand,
+  #  };
+  #}
   return \%desks;
 }
 
+########################################################################
+### Tickets
+########################################################################
+
+# Add a new issue into a desk
+#
+sub create_issue {
+  my($deskname) = @_;
+  state $id_counter;
+
+  # Pick ticket based on frequency
+  my $type = (
+    map $_->[0],
+    sort { $b->[1] <=> $a->[1] }
+    map [ $_, $_game->{issue_types}{$_}{frequency}*rand ],
+    keys %{$_game->{issue_types}}
+  )[0];
+  $_game->{desks}{$deskname}{ticket}{++$id_counter} = {
+    request    => 'issue',
+    solution   => $type,
+    difficulty => $_game->{issue_types}{$type}{difficulty},
+  };
+}
+
+# Add a new issue into a desk
+#
+sub create_service {
+  my($deskname) = @_;
+  state $id_counter;
+
+  # Pick ticket based on frequency
+  my $type = (
+    map $_->[0],
+    sort { $b->[1] <=> $a->[1] }
+    map [ $_, $_game->{service_types}{$_}{frequency}*rand ],
+    keys %{$_game->{service_types}}
+  )[0];
+  $_game->{desks}{$deskname}{ticket}{++$id_counter} = {
+    request    => 'service',
+    solution   => $type,
+    difficulty => $_game->{service_types}{$type}{difficulty},
+  };
+}
+
+# Pass a ticket to another queue
+#
+sub pass {
+  my($console_name,$ticket_id) = @_;
+
+  # Remove current assignment
+
+  # Pass to new console
+  
+}
+
+########################################################################
+### Web Server
+########################################################################
+
+app->secrets(['litedesk secret passphrase goes here']);
+
+new_game();
+create_issue('incident') for 1..10;
+create_service('service') for 1..10;
+
 get '/' => sub {
   my $c = shift;
-  $c->stash( game => new_game() );
+  $c->stash( game => $_game );
   $c->render(template => 'index');
 };
 
