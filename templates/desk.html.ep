@@ -26,7 +26,7 @@
       </tbody>
     </table>
     <input type=hidden name="desk" value="<%= $deskname %>" />
-% for my $action (keys %$desk->{action}) {
+% for my $action (keys %{$desk->{action}}) {
     <input type=submit name="<%=$action%>" value="<%=$action%>" />
 % }    
   </form>
