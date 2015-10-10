@@ -10,6 +10,7 @@
   <tbody>
 % for my $id ( sort keys %{$people} ) {
 %   my $person = $people->{$id};
+%   if (!exists $people->{$id}{ticket}) {
     <tr>
       <td><input type=radio value="<%= $id %>" name="person" /></td>
       <th><%= $id %></th>
@@ -17,6 +18,7 @@
       <td><%= sprintf "%.02f", $person->{skill} %>
       <td />
     </tr>
+%   }
 % }
   </tbody>
 </table>
