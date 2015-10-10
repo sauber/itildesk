@@ -6,19 +6,13 @@
 
 <h1>Welcome to ITIL Desk</h1>
 
-<table>
-  <tr>
-    <td><%= include 'desk', deskname=>'incident', desk=>$game->{desks}{incident} %></td>
-    <td><%= include 'desk', deskname=>'problem', desk=>$game->{desks}{problem} %></td>
-  </tr>
-  <tr>
-  </tr>
-</table>
+<%= include 'desk', deskname=>'incident', desk=>$game->{desk}{incident} %>
+<%= include 'desk', deskname=>'problem', desk=>$game->{desk}{problem} %>
 
 <pre>
 %= dumper $game
 </pre>
 Desk name:
-<%# = (keys %{$game->{desks}})[0] %>
+<%# = (keys %{$game->{desk}})[0] %>
 
 
