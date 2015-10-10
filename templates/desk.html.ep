@@ -27,9 +27,8 @@
       </tbody>
     </table>
     <input type=hidden name="desk" value="<%= $deskname %>" />
-    <input type=submit name="identify" value="Identify" />
-    <input type=submit name="pass" value="Pass" />
-    <input type=submit name="assign" value="Assign" />
-    
+% for my $action (keys %$desk->{action}) {
+    <input type=submit name="<%=$action%>" value="<%=$action%>" />
+% }    
   </form>
 </div>
