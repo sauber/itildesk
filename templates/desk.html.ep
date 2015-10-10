@@ -11,12 +11,14 @@
   <tbody>
     <tr>
       <td><%= include 'tickets', tickets=>$desk->{ticket} %></td>
-      <td>People here</td>
-      <td>Solutions here</td>
+      <td><%= include 'people', people=>$desk->{person} %></td>
+      <td><%= include 'solutions', solutions=>$desk->{solutions} %></td>
     </tr>
   </tbody>
 </table>
 <input type=hidden name="desk" value="<%= $deskname %>" />
 <input type=submit name="identify" value="Identify" />
 <input type=submit name="pass" value="Pass" />
+<input type=submit name="assign" value="Assign" />
+
 </form>
