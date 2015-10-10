@@ -13,7 +13,7 @@
     % my @all_tickets=keys $tickets;
     % my @assigned_tickets=();
     % my @unassigned_tickets=();
-    % for my $p (keys %$desk->{person}) {
+    % for my $p (keys %{$desk->{person}}) {
     %   if (exists $desk->{person}{$p}{ticket}) {
     %     my $a=$desk->{person}{$p}{ticket};
     %     push @assigned_tickets, $a;
