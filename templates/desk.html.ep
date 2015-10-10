@@ -1,0 +1,22 @@
+<h3><%= ucfirst $deskname %> Desk</h3>
+<form action="<%= url_for 'update' %>" method=POST>
+<table>
+  <thead>
+    <tr>
+      <th>Tickets</th>
+      <th>People</th>
+      <th>Solutions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><%= include 'tickets', tickets=>$desk->{ticket} %></td>
+      <td>People here</td>
+      <td>Solutions here</td>
+    </tr>
+  </tbody>
+</table>
+<input type=hidden name="desk" value="<%= $deskname %>" />
+<input type=submit name="identify" value="Identify" />
+<input type=submit name="pass" value="Pass" />
+</form>

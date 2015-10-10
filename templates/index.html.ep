@@ -1,22 +1,18 @@
 % layout 'default';
 % title 'ITIL Desk';
+% if ( my $message = flash('error') ) {
+<div style="color: red"><%= $message %></div>
+% }
 <h1>Welcome to ITIL Desk</h1>
 
-
-<% foreach my $i (sort keys %($game->{desks}})) { %>
 <table>
-<% foreach my $c (qw(tickets person)) { %>
   <tr>
-    %= $c
+    <td><%= include 'desk', deskname=>'incident', desk=>$game->{desks}{incident} %></td>
+    <td><%= include 'desk', deskname=>'problem', desk=>$game->{desks}{problem} %></td>
   </tr>
-  <% } %>
+  <tr>
+  </tr>
 </table>
-<% } %>
-
-
-
-
-Desk Name: %= (keys %{$game->{desks}})[1]
 
 <pre>
 %= dumper $game

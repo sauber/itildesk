@@ -177,12 +177,24 @@ create_issue('incident') for 1..5;
 create_service('service') for 1..5;
 pass('incident', 1);
 
-post '/pass' => sub {
+post '/update' => sub {
   my $c = shift;
-   my $resp = pass( $c->param('desk'), $c->param('ticket') );
-   $c->flash( error => $resp->{error} ) if ref $resp;
-   $c->redirect_to('index');
-} => 'pass';
+   #my $resp = pass( $c->param('desk'), $c->param('ticket') );
+   #$c->flash( error => $resp->{error} ) if ref $resp;
+   #for my $key ( $c->param->names ) {
+   #  warn sprintf "*** $key=%s\n", $c->param($key);
+   #}
+   for my $key ( qw(desk ticket pass) ) {
+     if ( my $val = $c->param($key) ) {
+       warn sprintf "*** %s=%s\n", $key, $val;
+     }
+   }
+   if ( $c->param('pass') ) {
+     my $resp = pass( $c->param('desk'), $c->param('ticket') );
+     $c->flash( error => $resp->{error} ) if ref $resp;
+   }
+   $c->redirect_to($c->url_for('/'));
+} => 'update';
 
 get '/' => sub {
   my $c = shift;

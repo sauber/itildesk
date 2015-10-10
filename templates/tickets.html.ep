@@ -1,0 +1,25 @@
+<table>
+  <thead>
+    <tr>
+      <th>Select</th>
+      <th>ID</th>
+      <th>Title</th>
+      <th>Solution</th>
+      <th>Difficulty</th>
+      <th>Engineer</th>
+    </tr>
+  </thead>
+  <tbody>
+% for my $id ( keys %$tickets ) {
+%   my $ticket = $tickets->{$id};
+    <tr>
+      <td><input type=radio value="<%= $id %>" name="ticket" /></td>
+      <th><%= $id %></th>
+      <td />
+      <td><%= $ticket->{solution} %>
+      <td><%= sprintf "%.02f", $ticket->{difficulty} %>
+      <td />
+    </tr>
+% }
+  </tbody>
+</table>
