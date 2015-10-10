@@ -19,7 +19,7 @@
     % }
     % # Delete ticket $a from @all_tickets;
     
-    % for my $t ( sort @all_tickets ) {
+    % for my $t ( sort {$a <=> $b} @all_tickets ) {
     %   my $already_assigned=0;
     %   for my $i (@assigned_tickets) {
     %     $already_assigned=1 if ($i==$t);

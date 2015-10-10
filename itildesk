@@ -351,7 +351,7 @@ sub transfer {
     keys %{$_game->{desk}};
   my $newdesk = $_game->{desk}{$newdeskname};
 
-  $person->{skill} -= 0.5;
+  $person->{skill} /= 2;
   delete $desk->{person}{$person_name};
   $newdesk->{person}{$person_name} = $person;
   return { error=>"Moving $person_name from $deskname to $newdeskname" };
