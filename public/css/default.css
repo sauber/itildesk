@@ -1,0 +1,163 @@
+/*
+ITIL Desk Screen Stylesheet
+Created:	2015-10-10
+Author:		Soren
+Version:	1.0
+*/
+
+/* ======== Resets ::
+----------------------------------------------------------------- */
+body, address, blockquote, h1, h2, h3, h4, h5, h6, p, pre, dl, ol,
+ul, dd, dt, li, fieldset, figure, form, menu {margin:0;padding:0;}
+
+/* ======== HTML & Body ::
+----------------------------------------------------------------- */
+html {font-size:100.01%;height:101%;-webkit-font-smoothing: antialiased;}
+body { 
+height:100%;
+font:62.5%/1.4 Arial,Tahoma,Geneva,Helvetica,sans-serif;
+background:#fff;
+color:#333;
+}
+
+/* ======== Links ::
+----------------------------------------------------------------- */
+a,a:visited {text-decoration:underline;}
+a:active, a:focus, a:hover {text-decoration:none;outline:none;}
+a img {border:none;}
+
+/* ======== Typography ::
+----------------------------------------------------------------- */
+/* example: @font-face {
+font-family: 'MyriadProRegular';
+src: url('../fonts/myriadpro-regular-webfont.eot');
+src: local('Myriad Pro'), local('MyriadPro-Regular'), 
+url('../fonts/myriadpro-regular-webfont.woff') format('woff'), 
+url('../fonts/myriadpro-regular-webfont.ttf') format('truetype'),
+url('../fonts/myriadpro-regular-webfont.svg#webfontt5Bf7X9V') format('svg');
+}*/
+
+abbr,acronym {text-decoration: none;border:0}
+address, h1, h2, h3, h4, h5, h6, dd, dt, li, p, pre {padding:6px 0;}
+h1 {font-size:22px;}
+h2 {font-size:18px;}
+h3 {font-size:16px;}
+h4 {font-size:14px;}
+h5 {font-size:12px;}
+h6 {font-size:11px;}
+address,blockquote,div,dd,dt,li,p,pre,th,td {font-size:12px;}
+dt {font-weight:bold;}
+q:before,q:after {content:'';}
+
+/* ======== Lists ::
+----------------------------------------------------------------- */
+dl, ol, ul {margin-left: 20px;}
+li, ol, dd, dt {vertical-align:middle;list-style-position: inside;}
+
+/* ======== Tables ::
+----------------------------------------------------------------- */
+table {border:1px solid black;border-collapse:collapse;border-spacing:0;overflow:hidden;word-wrap:break-word;}
+caption, th, td {text-align: left;vertical-align:top;}
+
+/* ======== Clearing ::
+----------------------------------------------------------------- */
+.clearfix:before, .clearfix:after {content: "\0020"; display: block; height: 0; overflow: hidden;}
+.clearfix:after {clear: both;}
+
+/* ======== General Purpose Classes ::
+----------------------------------------------------------------- */
+.alignleft {text-align:left;}
+.alignright {text-align:right;}
+.caps {text-transform:uppercase !important;}
+.center {text-align:center;}
+.clear {clear:both;padding:0;margin:0;line-height:0;}
+.floatleft {float:left;}
+.floatright {float:right;}
+.hidden {display:none;}
+.inline {display:inline;}
+.large {font-size:20px;font-weight:bold;}
+.light {color:#999;}
+.small {font-size:10px;font-weight:normal;}
+.visuallyhidden {position:absolute:left:-9999em;}/* SEO Ok way to move text out of view */
+
+/* ======== Template ::
+----------------------------------------------------------------- */
+article, aside, details, figcaption, figure, footer, header, hgroup, menu, nav, section {display: block;}
+#wrap {}
+#header /* header */ { }
+#content { }
+#main {}
+#sidebar {}
+#footer /* footer */ {clear:both;}
+
+/* ======== Navigation ::
+----------------------------------------------------------------- */
+/* ==== Main Menu ==== */
+#menu ul {margin:0 auto; list-style: none;}
+#menu li {float: left;}
+#menu a {display: block;}
+#menu a:active, #menu a:focus, #menu a:hover {}
+
+	/* 2nd Tier Child Menu with Accessible drop down method */
+	#menu li ul {position: absolute;top: -999em;left: -999em;}
+	#menu li:hover ul, #menu li.hover ul {top: auto;left: auto;}
+	#menu li li {}
+	#menu li a {}
+	#menu li a:active, #menu li a:focus, #menu li a:hover {}
+	
+
+/* ==== Footer Menu ==== */
+#footer ul { }
+#footer li { }
+#footer li a { }
+#footer li a:active, #footer li a:focus, #footer li a:hover { }
+
+/* ======== Page Styles ::
+----------------------------------------------------------------- */
+
+
+
+/* ======== Forms ::
+----------------------------------------------------------------- */
+label {cursor:pointer;}
+fieldset {border:0;}
+input,label,select,textarea {line-height:1.2;vertical-align:baseline;font-size:inherit;font-family:inherit;}
+input[type="radio"], input[type="checkbox"] {position:relative;top:1.5px;}
+input[type="text"],textarea {padding:.2em;}
+textarea {overflow:auto;}
+
+/* ==== Simple CMSMS Contact Form for modified contact template ==== */
+#contactform {margin:0 auto;width:500px;}
+#contactform div {clear:both;display:block;padding:5px 0;overflow:hidden;}
+#contactform label, #contactform p.label, #contactform input {display:block;float:left;}
+#contactform label, #contactform p.label {padding:4px 10px 0 0;text-align:right;width:30%;}
+#contactform input, #contactform textarea {width:60%;}
+#contactform textarea {height:180px;}
+#contactform div.submit input {width:160px;}
+/* Errors */
+#contactform .error, #contactform .error * {color:#c1342c !important;}
+
+
+/* ======== Internet Explorer Corrections ::
+----------------------------------------------------------------- */
+#iexplorer .clearfix {zoom: 1;}
+.ie7 img { -ms-interpolation-mode: bicubic; }
+
+
+/* ======== Print ::
+----------------------------------------------------------------- */
+
+@media print {
+  * { background: transparent !important; color: black !important; text-shadow: none !important; filter:none !important;
+  -ms-filter: none !important; } 
+  a, a:visited { color: #444 !important; text-decoration: underline; }
+  a[href]:after { content: " (" attr(href) ")"; }
+  abbr[title]:after { content: " (" attr(title) ")"; }
+  .ir a:after, a[href^="javascript:"]:after, a[href^="#"]:after { content: ""; }  
+  pre, blockquote { border: 1px solid #999; page-break-inside: avoid; }
+  thead { display: table-header-group; }
+  tr, img { page-break-inside: avoid; }
+  @page { margin: 0.5cm; }
+  p, h2, h3 { orphans: 3; widows: 3; }
+  h2, h3{ page-break-after: avoid; }
+}
