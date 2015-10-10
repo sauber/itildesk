@@ -199,12 +199,12 @@ sub start {
     my $duration = 10 * $ticket->{difficulty} / $person->{skill};
     $ticket->{action}{$action} = {
       start => time(),
-      person => $person,
+      person => $person_name,
       status => 'active',
       end => time()+$duration,
     };
 
-    $person->{ticket} = $ticket;
+    $person->{ticket} = $ticket_id;
     
     return;
   }
@@ -213,16 +213,16 @@ sub start {
 
 # Remove a ticket assignment (it may not exist in the first place
 #
-sub unassign {
-  my($person_name,$ticket_id) = @_;
-
-  for my $desk ( values %{$_game->{desk}} ) {
-    delete $desk->{ticket}{$ticket_id}{person} 
-        if $desk->{ticket}{$ticket_id};
-    delete $desk->{person}{$person_name}{ticket}
-        if $desk->{person}{$person_name};
-  }
-}
+#sub unassign {
+#  my($person_name,$ticket_id) = @_;
+#
+#  for my $desk ( values %{$_game->{desk}} ) {
+#    delete $desk->{ticket}{$ticket_id}{person} 
+#        if $desk->{ticket}{$ticket_id};
+#    delete $desk->{person}{$person_name}{ticket}
+#        if $desk->{person}{$person_name};
+#  }
+#}
 
 
 ########################################################################
@@ -249,11 +249,17 @@ sub enlist {
 # Maintenance before updating
 #
 sub turn {
-  # Update status to done for completed actions 
+  # Change status to done for completed actions 
   for my $desk ( values %{$_game->{desk}} ) {
     for my $ticket ( values %{$desk->{ticket}} ) {
       for my $action ( values %{$ticket->{action}} ) {
-        $action->{status} = 'done' if $action->{end} < time();
+        if ( $action->{status} eq 'active') {
+          if ( $action->{end} < time() ) {
+            $action->{status} = 'done';
+            my $person_name = $action->{person};
+            delete $desk->{person}{$person_name}{ticket};
+          }
+        }
       }
     }
   }
