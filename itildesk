@@ -316,6 +316,11 @@ sub turn {
 
   # TODO People skill up or down
   # TODO Solution efficiency up or down
+
+  # Game Score
+  my $ticket_count = 0;
+  $ticket_count += scalar map keys(%{$_->{ticket}}), values %{$_game->{desk}};
+  $_game->{score} = 100 - $ticket_count;
 }
 
 
