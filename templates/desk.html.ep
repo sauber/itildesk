@@ -15,7 +15,7 @@
 	  <td colspan="2">
 	   <%= include 'assignedpeople', desk=>$desk %>
 	  </td>
-	  <td rowspan="3" style="background-color: #f0f0ff;">
+	  <td rowspan="2" style="background-color: #f0f0ff;">
 	    <%= include 'solutions', solutions=>$desk->{solution} %>
 	  </td>
 	</tr>
