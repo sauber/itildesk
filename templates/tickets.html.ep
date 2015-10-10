@@ -6,29 +6,33 @@
       <th>ID</th>
       <th>Title</th>
       <th>Solution</th>
-      <th>Difficulty</th>
     </tr>
   </thead>
   <tbody>
-% for my $id ( keys %$tickets ) {
-%   my $attrib=$tickets->{$id};
-%   my $ticket = $tickets->{$id};
-%   my $is_active=0;
-%   for my $act ( keys %$ticket ) {
-%     if (exists $ticket->{action}{$act}{status}) {
-%       $is_active = 1 if ( $ticket->{action}{$act}{status} == "active" );
-%     }
-%   }
-%   if ($is_active == 0) {
+    % my $tickets=$desk->{ticket};
+    % my @all_tickets=keys $tickets;
+    % my @assigned_tickets=();
+    % my @unassigned_tickets=();
+    % for my $p (keys %$desk->{person}) {
+    %   if (exists $desk->{person}{$p}{ticket}) {
+    %     my $a=$desk->{person}{$p}{ticket};
+    %     push @assigned_tickets, $a;
+    %   }
+    %   # Delete ticket $a from @all_tickets;
+    % }
+    % @unassigned_tickets=@all_tickets;
+%   for my $t ( @unassigned_tickets ) {
       <tr>
-        <td><input type=radio value="<%= $id %>" name="ticket" /></td>
-	<th><%= $id %></th>
-	<td>Something2</td>
-	<td><%= $ticket->{solution} %></td>
-	<td><%= sprintf "%.02f", $ticket->{difficulty} %></td>
+        <td><input type=radio value="<%= $t %>" name="ticket" /></td>
+	<th><%= $t %></th>
+	% if (exists $tickets->{$t}{show_solution}) {
+	<td><%= $tickets->{$t}{solution} %></td>
+	% } else {
+	<td><%= $tickets->{$t}{title} %></td>
+	% }
+	<td><%= $tickets->{$t}{solution} %></td>
 	<td />
       </tr>
 %   }
-% }
   </tbody>
 </table>

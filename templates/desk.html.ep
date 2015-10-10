@@ -20,7 +20,7 @@
 	  </td>
 	</tr>
 	<tr>
-	  <td style="background-color: #f0fff0;"><%= include 'tickets', tickets=>$desk->{ticket} %></td>
+	  <td style="background-color: #f0fff0;"><%= include 'tickets', desk=>$desk %></td>
 	  <td style="background-color: #fff0f0;"><%= include 'people', people=>$desk->{person} %></td>
 	</tr>
       </tbody>
