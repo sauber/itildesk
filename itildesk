@@ -117,6 +117,7 @@ sub new_game {
   $_game->{desk} = \%desks;
   $_game->{issue_types} = { new_issue_types() };
   $_game->{service_types} = { new_service_types() };
+  $_game->{updated} = time();
 }
 
 
@@ -210,7 +211,7 @@ sub pass {
   my $ticket = $curdesk->{ticket}{$ticket_id};
   return {error=>"Ticket $ticket_id is not on $deskname desk"} unless $ticket;
 
-  # Remove current assignment
+  # Remove current assignment and action
   if ( $ticket->{action} ) {
     for my $action ( keys %{$ticket->{action}} ) {
       if ( $ticket->{action}{$action}{status} eq 'active' ) {
@@ -244,20 +245,26 @@ sub identify {
     unless my $person = $desk->{person}{$person_name}
        and my $ticket = $desk->{ticket}{$ticket_id};
 
-  # Already identified
-  return {error=>"Ticket $ticket_id already identified"}
-    if defined $ticket->{action}{identify}{status}
-           and $ticket->{action}{identify}{status} eq 'done';
+  # Already identified or being identified
+  if ( my $identify = $ticket->{action}{identify} ) {
+    if ( $identify->{status} eq 'done') {
+      return {error=>"Ticket $ticket_id already identified"};
+    } elsif ( $identify->{person} eq $person_name ) {
+      return {error=>"$person_name already identifying ticket $ticket_id"};
+    } else {
+      # Cancel work
+      delete $desk->{person}{$person_name}{ticket};
+      delete $ticket->{action}{identify};
+    }
+  }
 
-  # TODO already started
-
-  # Start action
+  # Start identify action
   my $duration = 10 * $ticket->{difficulty} / $person->{skill};
   $ticket->{action}{identify} = {
-    start => time(),
+    start  => time(),
     person => $person_name,
     status => 'active',
-    end => time()+$duration,
+    end    => time()+$duration,
   };
 
   # Mark person as working
