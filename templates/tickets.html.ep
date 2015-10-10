@@ -15,8 +15,8 @@
 %   my $ticket = $tickets->{$id};
 %   my $is_active=0;
 %   for my $act ( keys %$ticket ) {
-%     if (exists $ticket->{action}{identify}{status}) {
-%       $is_active = 1 if ( $ticket->{actrion}{identify}{status} == "active" );
+%     if (exists $ticket->{action}{$act}{status}) {
+%       $is_active = 1 if ( $ticket->{action}{$act}{status} == "active" );
 %     }
 %   }
 %   if ($is_active == 0) {
