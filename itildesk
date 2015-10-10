@@ -50,7 +50,12 @@ sub new_desks {
     action => {
       apply => 1,
     },
-  };
+  },
+  engineering => {
+    action => {
+      assign => 1,
+    }
+  },
 }
 
 # Create issue seeded with difficulty and frequency
@@ -176,19 +181,30 @@ sub pass {
 
 # Assign ticket to person and vice versa
 #
-sub assign {
-  my($person_name,$ticket_id) = @_;
+sub start {
+  my($action,$person_name,$ticket_id) = @_;
 
   # Remove current assignment
   #
-  unassign($person_name,$ticket_id);
+  #unassign($person_name,$ticket_id);
 
   # Find correct desk
   for my $desk ( values %{$_game->{desk}} ) {
-    next unless $desk->{person}{$person_name}
-            and $desk->{ticket}{$ticket_id};
-    $desk->{person}{$person_name}{ticket} = $desk->{ticket}{$ticket_id};
-    $desk->{ticket}{$ticket_id}{person} = $desk->{person}{$person_name};
+    next unless my $person = $desk->{person}{$person_name}
+            and my $ticket = $desk->{ticket}{$ticket_id};
+    #$desk->{person}{$person_name}{ticket} = $desk->{ticket}{$ticket_id};
+    #$desk->{ticket}{$ticket_id}{person} = $desk->{person}{$person_name};
+    # XXX consider solution efficiency
+    my $duration = $ticket->{difficulty} / $person->{skill};
+    $ticket->{action}{$action} = {
+      start => time(),
+      person => $person,
+      status => 'active',
+      end => time()+$duration,
+    };
+
+    $person->{ticket} = $ticket;
+    
     return;
   }
   return {error=>"Person $person_name and ticket $ticket_id not found on same desk"};
@@ -219,9 +235,9 @@ sub enlist {
 
   my $desk = $_game->{desk}{$deskname};
   $desk->{solution}{$solutionname} ||= {};
-  $desk->{solution}{$solutionname}{efficiency} += 0.1
-    if defined $desk->{solution}{$solutionname}{efficiency}
-           and $desk->{solution}{$solutionname}{efficiency} <= 0.9;
+  $desk->{solution}{$solutionname}{efficiency} += 0.1;
+  $desk->{solution}{$solutionname}{efficiency} = 1
+    if $desk->{solution}{$solutionname}{efficiency} > 1;
 }
 
 
@@ -236,7 +252,7 @@ create_issue('incident') for 1..5;
 create_service('service') for 1..5;
 pass('incident', 1);
 enlist('incident', 'Kernel Hung') for 1..2;
-assign((keys %{$_game->{desk}{incident}{person}})[0], '2') ;
+start('identify',(keys %{$_game->{desk}{incident}{person}})[0], '2') ;
 
 post '/update' => sub {
   my $c = shift;
