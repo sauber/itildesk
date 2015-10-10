@@ -13,8 +13,7 @@
 	<tr>
 	  <!-- Show assigned tickets here with ticket number, name, person assigned -->
 	  <td colspan="2">
-	    <!-- <%= include 'assignedpeople', people=>$desk->{person} %> -->
-	    Here are assigned tickets
+	    <%= include 'assignedpeople', people=>$desk->{person} %>
 	  </td>
 	  <td rowspan="3" style="background-color: #f0f0ff;">
 	    <%= include 'solutions', solutions=>$desk->{solution} %>
