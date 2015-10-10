@@ -93,7 +93,7 @@ sub new_game {
     $desk->{solution} = {};
   }
 
-  $_game->{desks} = \%desks;
+  $_game->{desk} = \%desks;
   $_game->{issue_types} = { new_issue_types() };
   $_game->{service_types} = { new_service_types() };
 }
@@ -122,7 +122,7 @@ sub create_issue {
     difficulty => $_game->{issue_types}{$type}{difficulty},
   };
   # Place ticket on desk
-  $_game->{desks}{$deskname}{ticket}{++$_id_counter} = $ticket;
+  $_game->{desk}{$deskname}{ticket}{++$_id_counter} = $ticket;
 }
 
 # Add a new issue into a desk
@@ -144,7 +144,7 @@ sub create_service {
     difficulty => $_game->{service_types}{$type}{difficulty},
   };
   # Place ticket on desk
-  $_game->{desks}{$deskname}{ticket}{++$_id_counter} = $ticket;
+  $_game->{desk}{$deskname}{ticket}{++$_id_counter} = $ticket;
 }
 
 # Pass a ticket into another queue
@@ -153,20 +153,58 @@ sub pass {
   my($deskname,$ticket_id) = @_;
 
   # Find new desk
-  my $target_deskname = $_game->{desks}{$deskname}{action}{pass};
+  my $target_deskname = $_game->{desk}{$deskname}{action}{pass};
   return {error=>"$deskname desk cannot pass tickets"} unless $target_deskname;
 
   # Find ticket
-  my $ticket = $_game->{desks}{$deskname}{ticket}{$ticket_id};
+  my $ticket = $_game->{desk}{$deskname}{ticket}{$ticket_id};
   return {error=>"Ticket $ticket_id is not on $deskname desk"} unless $ticket;
 
   # Remove current assignment TODO
 
   # Remove from desk
-  delete $_game->{desks}{$deskname}{ticket}{$ticket_id};
+  delete $_game->{desk}{$deskname}{ticket}{$ticket_id};
 
   # Add to desk
-  $_game->{desks}{$target_deskname}{ticket}{$ticket_id} = $ticket;
+  $_game->{desk}{$target_deskname}{ticket}{$ticket_id} = $ticket;
+}
+
+
+########################################################################
+### Assignments Ticket/Person
+########################################################################
+
+# Assign ticket to person and vice versa
+#
+sub assign {
+  my($person_name,$ticket_id) = @_;
+
+  # Remove current assignment
+  #
+  unassign($person_name,$ticket_id);
+
+  # Find correct desk
+  for my $desk ( values %{$_game->{desk}} ) {
+    next unless $desk->{person}{$person_name}
+            and $desk->{ticket}{$ticket_id};
+    $desk->{person}{$person_name}{ticket} = $desk->{ticket}{$ticket_id};
+    $desk->{ticket}{$ticket_id}{person} = $desk->{person}{$person_name};
+    return;
+  }
+  return {error=>"Person $person_name and ticket $ticket_id not found on same desk"};
+}
+
+# Remove a ticket assignment (it may not exist in the first place
+#
+sub unassign {
+  my($person_name,$ticket_id) = @_;
+
+  for my $desk ( values %{$_game->{desk}} ) {
+    delete $desk->{ticket}{$ticket_id}{person} 
+        if $desk->{ticket}{$ticket_id};
+    delete $desk->{person}{$person_name}{ticket}
+        if $desk->{person}{$person_name};
+  }
 }
 
 
@@ -179,10 +217,11 @@ sub pass {
 sub enlist {
   my($deskname, $solutionname) = @_;
 
-  my $desk = $_game->{desks}{$deskname};
+  my $desk = $_game->{desk}{$deskname};
   $desk->{solution}{$solutionname} ||= {};
   $desk->{solution}{$solutionname}{efficiency} += 0.1
-    if $desk->{solution}{$solutionname}{efficiency} <= 0.9;
+    if defined $desk->{solution}{$solutionname}{efficiency}
+           and $desk->{solution}{$solutionname}{efficiency} <= 0.9;
 }
 
 
@@ -197,6 +236,7 @@ create_issue('incident') for 1..5;
 create_service('service') for 1..5;
 pass('incident', 1);
 enlist('incident', 'Kernel Hung') for 1..2;
+assign((keys %{$_game->{desk}{incident}{person}})[0], '2') ;
 
 post '/update' => sub {
   my $c = shift;

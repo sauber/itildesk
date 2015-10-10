@@ -8,17 +8,20 @@
 
 <table>
   <tr>
-    <td><%= include 'desk', deskname=>'incident', desk=>$game->{desks}{incident} %></td>
-    <td><%= include 'desk', deskname=>'problem', desk=>$game->{desks}{problem} %></td>
+% for my $deskname ( qw(incident problem deploy) ) {
+    <td><%= include 'desk', deskname=>$deskname, desk=>$game->{desk}{$deskname} %></td>
+% }
   </tr>
   <tr>
+% for my $deskname ( qw(service engineering capacity) ) {
+    <td><%= include 'desk', deskname=>$deskname, desk=>$game->{desk}{$deskname} %></td>
+% }
   </tr>
 </table>
+
+<hr />
 
 <pre>
 %= dumper $game
 </pre>
-Desk name:
-<%# = (keys %{$game->{desks}})[0] %>
-
 
