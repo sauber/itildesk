@@ -3,6 +3,7 @@
 % if ( my $message = flash('error') ) {
 <div style="color: red"><%= $message %></div>
 % }
+
 <h1>Welcome to ITIL Desk</h1>
 
 <table>
