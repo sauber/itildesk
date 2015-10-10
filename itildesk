@@ -130,10 +130,10 @@ sub new_game {
 sub create_title {
   my @part = qw(all on some a just no again);
   my @adj  = qw(weird known expected spurious weak new old critical);
-  my @comp = qw(issue error occurence invoke situation full);
+  my @comp = qw(issue error occurence invoke situation full start stop panic loss);
   my @name = (sprintf "0x%s%s%s%s", map chr(64+32*rand), 1..4);
   my @dir  = qw(for on from with by);
-  my @obj  = qw(user device disk cpu ram process network server nic kernel package password);
+  my @obj  = qw(user device disk cpu ram process network server nic kernel package password buffer start end mouse account cable);
 
   return ucfirst join ' ', 
     $part[rand @part],
@@ -182,6 +182,7 @@ sub create_service {
   )[0];
   # Create ticket
   my $ticket = {
+    title      => create_title(),
     request    => 'service',
     solution   => $type,
     difficulty => $_game->{service_types}{$type}{difficulty},
@@ -234,10 +235,6 @@ sub pass {
 sub identify {
   my($deskname, $person_name, $ticket_id) = @_;
 
-  # Remove current assignment
-  #
-  #unassign($person_name,$ticket_id);
-
   # Confirm person and ticket on desk
   my $desk = $_game->{desk}{$deskname};
   return
@@ -272,25 +269,44 @@ sub identify {
   return 'OK';
 }
 
-# Remove a ticket assignment (it may not exist in the first place
+# Kick a person over to different desk
 #
-#sub unassign {
-#  my($person_name,$ticket_id) = @_;
-#
-#  for my $desk ( values %{$_game->{desk}} ) {
-#    delete $desk->{ticket}{$ticket_id}{person} 
-#        if $desk->{ticket}{$ticket_id};
-#    delete $desk->{person}{$person_name}{ticket}
-#        if $desk->{person}{$person_name};
-#  }
-#}
+sub transfer {
+  my($deskname,$person_name) = @_;
 
-# Whatever a person is working on, cancel it
-#
-sub cancel {
-  my($person_name) = @_;
+  # Confirm person on desk
+  my $desk = $_game->{desk}{$deskname};
+  return
+    {error=>"$person_name is not on $desk desk"}
+    unless $desk->{person}{$person_name};
+  my $person = $desk->{person}{$person_name};
 
-  #my($desk) = grep 
+  # Stop whatever person is working on
+  if ( my $ticket_id = $person->{ticket} ) {
+    delete $person->{ticket};
+    my $ticket = $desk->{ticket}{$ticket_id};
+    for my $action_name ( keys %{$ticket->{action}} ) {
+      my $action = $ticket->{action}{$action_name};
+      if ( $action->{person} eq $person_name ) {
+        delete $ticket->{action}{$action_name};
+        last;
+      }
+    }
+  }
+
+  # Pick random new desk
+  #my($newdesk) =
+  #  map $_game->{desk}{$_},
+  my($newdeskname) =
+    sort { rand() <=> rand() }
+    grep { $_ ne $deskname }
+    keys %{$_game->{desk}};
+  my $newdesk = $_game->{desk}{$newdeskname};
+
+  $person->{skill} -= 0.5;
+  delete $desk->{person}{$person_name};
+  $newdesk->{person}{$person_name} = $person;
+  return { error=>"Moving $person_name from $deskname to $newdeskname" };
 }
 
 
@@ -370,11 +386,11 @@ post '/update' => sub {
   my $c = shift;
 
   turn();
-  #for my $key ( qw(desk ticket pass) ) {
-  #  if ( my $val = $c->param($key) ) {
-  #    warn sprintf "*** %s=%s\n", $key, $val;
-  #  }
-  #}
+  for my $key ( qw(apply desk ticket person solution breakfix handover identify invent pass request transfer workaround) ) {
+    if ( my $val = $c->param($key) ) {
+      warn sprintf "*** POST %s=%s\n", $key, $val;
+    }
+  }
   my $resp = {error => 'Missing data, nothing done'};
   if ( my $desk = $c->param('desk') ) {
     if ( my $ticket = $c->param('ticket') ) {
@@ -385,6 +401,10 @@ post '/update' => sub {
         if ( $c->param('identify') ) {
           $resp = identify($desk, $person, $ticket);
         }
+      }
+    } elsif ( my $person = $c->param('person') ) {
+      if ( $c->param('transfer') ) {
+        $resp = transfer($desk, $person);
       }
     }
   }
