@@ -218,6 +218,7 @@ sub pass {
       if ( $ticket->{action}{$action}{status} eq 'active' ) {
         my $person_name = $ticket->{action}{$action}{person};
         delete $ticket->{action}{$action};
+        delete $ticket->{doing};
         delete $curdesk->{person}{$person_name}{ticket};
       }
     }
@@ -252,6 +253,7 @@ sub identify {
       # Cancel work
       delete $desk->{person}{$person_name}{ticket};
       delete $ticket->{action}{identify};
+      delete $ticket->{doing};
     }
   }
 
@@ -263,10 +265,11 @@ sub identify {
     status => 'active',
     end    => time()+$duration,
   };
+  $ticket->{doing} = 'identify';
 
   # Mark person as working
   $person->{ticket} = $ticket_id;
-  return 'OK';
+  return { error=>"$person_name is identifying ticket $ticket_id"};
 }
 
 # Apply breakfix
@@ -299,6 +302,7 @@ sub breakfix {
       # Cancel work
       delete $desk->{person}{$person_name}{ticket};
       delete $ticket->{action}{identify};
+      delete $ticket->{doing};
     }
   }
 
@@ -311,6 +315,7 @@ sub breakfix {
     status => 'active',
     end    => time()+$duration,
   };
+  $ticket->{doing} = 'breakfix';
 
   # Mark person as working
   $person->{ticket} = $ticket_id;
@@ -401,6 +406,7 @@ sub turn {
             $action->{status} = 'done';
             my $person_name = $action->{person};
             delete $desk->{person}{$person_name}{ticket};
+            delete $ticket->{doing};
             if ( $action_name eq 'identify' ) {
               $ticket->{show_solution} = 1;
             } elsif ( $action_name eq 'breakfix') {
