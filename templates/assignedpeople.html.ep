@@ -4,6 +4,8 @@
       <th>ID</th>
       <th>Title</th>
       <th>Engineer</th>
+      <th>Action</th>
+      <th>ETA</th>
     </tr>
   </thead>
   <tbody>
@@ -14,8 +16,15 @@
     <tr>
       % my $ticketid=$desk->{person}{$id}{ticket};
       <th><%= $ticketid %></th>
+      % if (exists $desk->{ticket}{$ticketid}{show_solution}) {
+      <td><%= $desk->{ticket}{$ticketid}{solution} %></td>
+      % } else {
       <td><%= $desk->{ticket}{$ticketid}{title} %></td>
+      % }
       <td><%= $id %></td>
+      % my $a=$desk->{ticket}{$ticketid}{doing};
+      <td><%= $a %></td>
+      <td><%= int $desk->{ticket}{$ticketid}{action}{$a}{end}-time() %></td>
     </tr>
     % }
 % }
