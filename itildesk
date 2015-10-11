@@ -24,15 +24,15 @@ sub new_people {
 # Create desks with abilities
 #
 sub new_desks {
-  #service => {
-  #  action => {
-  #    transfer => 1,
-  #    identify => 1,
-  #    request  => 'engineering',
-  #    assign   => 1,
-  #    handover => 'deploy',
-  #  },
-  #},
+  service => {
+    action => {
+      transfer => 1,
+      identify => 1,
+      request  => 'engineering',
+      assign   => 1,
+      handover => 'deploy',
+    },
+  },
   incident => {
     action => {
       transfer => 1,
