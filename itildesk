@@ -292,9 +292,14 @@ sub complete_action {
     delete $desk->{ticket}{$ticket_id};
     $desk->{workaround}{$ticket->{solution}} = 1;
   } elsif ( $action_name eq 'apply' ) {
-    delete $desk->{ticket}{$ticket_id};
-    $desk->{apply}{$ticket->{solution}} = 1;
-    # TODO Delete all ticket of this solution
+    # Delete all ticket of this solution
+    my $solution = $desk->{ticket}{$ticket_id}{solution};
+    for my $deskn ( values %{$_game->{desk}} ) {
+      for my $tid ( keys %{$deskn->{ticket}} ) {
+        delete $deskn->{ticket}{$tid}
+          if $deskn->{ticket}{$tid}{solution} eq $solution;
+      }
+    }
   } elsif ( $action_name eq 'invent' ) {
     my $deskname = $ticket->{desk};
     enlist( $ticket->{desk}, $ticket->{solution} );
@@ -448,6 +453,9 @@ sub handover {
     cancel_action($desk, $ticket, $action_name);
   }
 
+  # Share solution
+  $_game->{desk}{$target}{solution}{$solution} = $desk->{solution}{$solution};
+
   # Complete ticket transfer
   delete $desk->{ticket}{$ticket_id};
   $_game->{desk}{$target}{ticket}{$ticket_id} = $ticket;
@@ -594,7 +602,7 @@ post '/update' => sub {
       $resp = request( $desk, $ticket ) if $c->param('request');
       if ( my $person = $c->param('person') ) {
         $resp = identify($desk, $person, $ticket) if $c->param('identify');
-        $resp = invent  ($desk, $person, $ticket) if $c->param('invent');
+        $resp = invent($desk, $person, $ticket) if $c->param('invent');
         if ( my $solution = $c->param('solution') ) {
           $resp = ticket_resolution($desk, $person, $ticket, $solution, 'breakfix') if $c->param('breakfix');
           $resp = ticket_resolution($desk, $person, $ticket, $solution, 'workaround') if $c->param('workaround');
