@@ -8,7 +8,7 @@
     </tr>
   </thead>
   <tbody>
-% for my $id ( keys %$solutions ) {
+% for my $id ( sort keys %$solutions ) {
 %   my $solution = $solutions->{$id};
     <tr>
       <td><input type=radio id="<%= $id.'.s' %>" value="<%= $id %>" name="solution" /></td>
