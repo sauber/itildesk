@@ -200,137 +200,132 @@ sub create_service {
   add_ticket( $deskname, $ticket );
 }
 
-
 ########################################################################
-### Actions
+### Start, cancel, complete actions
 ########################################################################
 
-# Pass a ticket into another queue
+# Attempt to cancel an unfinished action
 #
-sub pass {
-  my($deskname,$ticket_id) = @_;
+sub cancel_action {
+  my($desk,$ticket,$action_name) = @_;
 
-  # Current desk
-  my $curdesk = $_game->{desk}{$deskname};
-
-  # Find new desk
-  my $target_deskname = $curdesk->{action}{pass};
-  return {error=>"$deskname desk cannot pass tickets"} unless $target_deskname;
-
-  # Find ticket
-  my $ticket = $curdesk->{ticket}{$ticket_id};
-  return {error=>"Ticket $ticket_id is not on $deskname desk"} unless $ticket;
-
-  # Remove current assignment and action
-  if ( $ticket->{action} ) {
-    for my $action ( keys %{$ticket->{action}} ) {
-      if ( $ticket->{action}{$action}{status} eq 'active' ) {
-        my $person_name = $ticket->{action}{$action}{person};
-        delete $ticket->{action}{$action};
-        delete $ticket->{doing};
-        delete $curdesk->{person}{$person_name}{ticket};
-      }
-    }
-  }
-
-  # Remove from desk
-  delete $curdesk->{ticket}{$ticket_id};
-
-  # Add to desk
-  $_game->{desk}{$target_deskname}{ticket}{$ticket_id} = $ticket;
+  my $person_name = $ticket->{action}{$action_name}{person};
+  delete $desk->{person}{$person_name}{$ticket};
+  delete $ticket->{action}{$action_name};
+  delete $ticket->{doing};
 }
 
-# Start identification of a ticket
+# Try to start action. There may be a number of reson for why cannot
 #
-sub identify {
-  my($deskname, $person_name, $ticket_id) = @_;
+sub start_action {
+  my($desk,$person_name,$ticket_id,$action_name,$duration) = @_;
 
-  # Confirm person and ticket on desk
-  my $desk = $_game->{desk}{$deskname};
-  return
-    {error=>"Person $person_name and ticket $ticket_id not found on same desk"}
-    unless my $person = $desk->{person}{$person_name}
-       and my $ticket = $desk->{ticket}{$ticket_id};
-
-  # Already identified or being identified
-  if ( my $action = $ticket->{action}{identify} ) {
+  # Action in progress or completed?
+  my $ticket = $desk->{ticket}{$ticket_id};
+  my $person = $desk->{person}{$person_name};
+  if ( my $action = $ticket->{action}{$action_name} ) {
     if ( $action->{status} eq 'done') {
-      return {error=>"Ticket $ticket_id already identified"};
+      # Already done
+      return {error=>"Ticket $ticket_id action $action_name already done"};
     } elsif ( $action->{person} eq $person_name ) {
-      return {error=>"$person_name already identifying ticket $ticket_id"};
-    } else {
-      # Cancel work
-      delete $desk->{person}{$person_name}{ticket};
-      delete $ticket->{action}{identify};
-      delete $ticket->{doing};
+      # Continue with same person
+      return {error=>"$person_name already doing $action_name on ticket $ticket_id"};
     }
+    # Cancel work for previous person
+    cancel_action($desk, $ticket, $action_name);
   }
 
-  # Start identify action
-  my $duration = 10 * $ticket->{difficulty} / $person->{skill};
-  $ticket->{action}{identify} = {
+  # Start action
+  $ticket->{action}{$action_name} = {
     start  => time(),
     person => $person_name,
     status => 'active',
     end    => time()+$duration,
   };
-  $ticket->{doing} = 'identify';
-
-  # Mark person as working
+  $ticket->{doing} = $action_name;
   $person->{ticket} = $ticket_id;
-  return { error=>"$person_name is identifying ticket $ticket_id"};
+
+  return { error=>"$person_name is doing $action_name on ticket $ticket_id"};
 }
 
-# Apply breakfix
+# Complete an action when it's done
 #
-sub breakfix {
-  my($deskname, $person_name, $ticket_id, $solution) = @_;
+sub complete_action {
+  my($desk,$ticket_id,$action_name) = @_;
 
-  # Confirm person and ticket on desk
-  my $desk = $_game->{desk}{$deskname};
-  return
-    {error=>"Person $person_name and ticket $ticket_id not found on same desk"}
-    unless my $person = $desk->{person}{$person_name}
-       and my $ticket = $desk->{ticket}{$ticket_id};
+  # Action exists?
+  return { error=>"No $action_name action in ticket $ticket_id" }
+    unless my $ticket = $desk->{ticket}{$ticket_id}
+       and my $action = $desk->{ticket}{$ticket_id}{action}{$action_name};
 
-  return
-    { error=>"Cause not identified for ticket $ticket_id" }
-    unless $ticket->{show_solution};
+  # Even in progress?
+  return { error=>"Action $action_name not active" }
+    if $action->{status} ne 'active';
 
-  return
-    { error=>"$solution is wrong solution for ticket $ticket_id"}
-    if $solution ne $ticket->{solution};
+  # Still in progress?
+  return { error=>"Action $action_name still in progress" }
+    if $action->{end} > time();
 
-  # Already breakfixed or being breakfixed
-  if ( my $action = $ticket->{action}{breakfix} ) {
-    if ( $action->{status} eq 'done') {
-      return {error=>"Ticket $ticket_id already breakfixed"};
-    } elsif ( $action->{person} eq $person_name ) {
-      return {error=>"$person_name already breakfixing ticket $ticket_id"};
-    } else {
-      # Cancel work
-      delete $desk->{person}{$person_name}{ticket};
-      delete $ticket->{action}{identify};
-      delete $ticket->{doing};
-    }
+  # Free up person
+  my $person_name = $action->{person};
+  my $person = $desk->{person}{$person_name};
+  delete $person->{ticket};
+
+  # Mark as done
+  $action->{status} = 'done';
+  delete $ticket->{doing};
+
+  # Post action changes
+  if ( $action_name eq 'identify' ) {
+    $ticket->{show_solution} = 1;
+  } elsif ( $action_name eq 'breakfix' ) {
+    delete $desk->{ticket}{$ticket_id};
+  } elsif ( $action_name eq 'invent' ) {
+    my $deskname = $ticket->{desk};
+    enlist( $ticket->{desk}, $ticket->{solution} );
+    delete $desk->{ticket}{$ticket_id};
   }
 
-  # Start identify action
-  my $efficiency = $desk->{solution}{$solution}{efficiency};
-  my $duration = 10 * $ticket->{difficulty} / ( $person->{skill} * $efficiency );
-  $ticket->{action}{breakfix} = {
-    start  => time(),
-    person => $person_name,
-    status => 'active',
-    end    => time()+$duration,
-  };
-  $ticket->{doing} = 'breakfix';
+  #return { error=>"$action_name completed" };
+}
 
-  # Mark person as working
-  $person->{ticket} = $ticket_id;
-  #return 'OK';
-  return { error=>"$person_name is applying breakfix to ticket $ticket_id"};
 
+########################################################################
+### Request to initiate Actions
+########################################################################
+
+# Confirm desk can action, has person and has ticket
+#
+sub desk_has_can {
+  my($deskname, $person_name, $ticket_id, $action_name) = @_;
+
+  my($person,$ticket,$target);
+  # Confirm desk exist
+  return { error=>"$deskname is not a valid desk" }
+    unless my $desk = $_game->{desk}{$deskname};
+
+  # Confirm desk can do action
+  if ( length $action_name ) {
+    return
+      { error=>"$deskname desk cannot do $action_name" }
+      unless $target = $desk->{action}{$action_name};
+  }
+
+  # Confirm person on desk
+  if ( length $person_name ) {
+    return
+      { error=>"$person_name not found on $deskname desk"}
+      unless $person = $desk->{person}{$person_name};
+  }
+
+  # Confirm ticket on desk
+  if ( length $ticket_id ) {
+    return
+      { error=>"Ticket $ticket_id not found on $deskname desk"}
+      unless $ticket = $desk->{ticket}{$ticket_id};
+  }
+
+  return( $desk, $person, $ticket, $target );
 }
 
 # Kick a person over to different random desk
@@ -338,69 +333,140 @@ sub breakfix {
 sub transfer {
   my($deskname,$person_name) = @_;
 
-  # Confirm person on desk
-  my $desk = $_game->{desk}{$deskname};
-  return
-    {error=>"$person_name is not on $desk desk"}
-    unless $desk->{person}{$person_name};
-  my $person = $desk->{person}{$person_name};
+  my($desk,$person,$ticket,$target) = 
+    desk_has_can($deskname, $person_name, undef, 'transfer');
+  return $desk if $desk->{error};
 
   # Stop whatever person is working on
   if ( my $ticket_id = $person->{ticket} ) {
-    delete $person->{ticket};
     my $ticket = $desk->{ticket}{$ticket_id};
-    for my $action_name ( keys %{$ticket->{action}} ) {
-      my $action = $ticket->{action}{$action_name};
-      if ( $action->{person} eq $person_name ) {
-        delete $ticket->{action}{$action_name};
-        last;
-      }
-    }
+    my $action_name = $ticket->{doing};
+    cancel_action($desk,$ticket,$action_name);
   }
 
-  # Pick random new desk
+  # Skill decrease when moving
+  $person->{skill} /= 2;
+
+  # Pick random other desk
   my($newdeskname) =
     sort { rand() <=> rand() }
     grep { $_ ne $deskname }
     keys %{$_game->{desk}};
   my $newdesk = $_game->{desk}{$newdeskname};
 
-  $person->{skill} /= 2;
+  # Complete the transfer
   delete $desk->{person}{$person_name};
   $newdesk->{person}{$person_name} = $person;
-  return { error=>"Moving $person_name from $deskname to $newdeskname" };
+  return { error=>"Transfered $person_name from $deskname to $newdeskname" };
 }
 
+# Pass a ticket into another queue
+#
+sub pass {
+  my($deskname,$ticket_id) = @_;
+
+  my($desk,$person,$ticket,$target) = 
+    desk_has_can($deskname, undef, $ticket_id, 'pass');
+  return $desk if $desk->{error};
+
+  # Verify that identification is completed
+  return { error=>"Cannot pass ticket $ticket_id without identification" }
+    unless $ticket->{show_solution};
+
+  # Remove current assignment and action
+  if ( my $action_name = $ticket->{doing} ) {
+    cancel_action($desk, $ticket, $action_name);
+  }
+
+  # Complete ticket transfer
+  delete $desk->{ticket}{$ticket_id};
+  $_game->{desk}{$target}{ticket}{$ticket_id} = $ticket;
+  return { error=>"Transfered ticket $ticket_id from $deskname to $target" };
+}
+
+# Create a request to create solution
+#
 sub request {
   my($deskname,$ticket_id) = @_;
 
-  # Confirm desk can request
-  my $desk = $_game->{desk}{$deskname};
-  return
-    {error=>"$desk desk cannot request inventions"}
-    unless my $newdeskname = $desk->{action}{request};
+  my($desk,$person,$ticket,$target) = 
+    desk_has_can($deskname, undef, $ticket_id, 'request');
+  return $desk if $desk->{error};
 
-  # Confirm ticket is on desk
-  return
-    {error=>"$deskname desk doesn't hold ticket $ticket_id"}
-    unless my $ticket = $desk->{ticket}{$ticket_id};
-  
   # Confirm ticket is identified
-  return
-    {error=>"Ticket $ticket_id is not identified"}
+  return {error=>"Ticket $ticket_id is not identified"}
     unless $ticket->{show_solution};
-  my $solution = $ticket->{solution};
 
   # Spawn ticket to target team
+  my $solution = $ticket->{solution};
   my $request = {
-    title    => "Invent: $solution",
-    request  => 'invent',
-    solution => $solution,
+    title      => "Invent $solution for $deskname",
+    request    => 'invent',
+    desk       => $deskname,
+    solution   => $solution,
     difficulty => $_game->{issue_types}{$solution}{difficulty},
   };
 
-  add_ticket($deskname, $ticket);
-  return {error=>"Requested $newdeskname to invent solution for $solution"};
+  add_ticket($target, $request);
+  return {error=>"Requested $target to invent solution for $solution"};
+}
+
+# Start identification of a ticket
+#
+sub identify {
+  my($deskname, $person_name, $ticket_id) = @_;
+
+  my($desk,$person,$ticket,$target) = 
+    desk_has_can($deskname, $person_name, $ticket_id, 'identify');
+  return $desk if $desk->{error};
+
+  my $duration = 10 * $ticket->{difficulty} / $person->{skill};
+  start_action($desk, $person_name, $ticket_id, 'identify', $duration);
+}
+
+# Apply breakfix
+#
+sub breakfix {
+  my($deskname, $person_name, $ticket_id, $solution) = @_;
+
+  my($desk,$person,$ticket,$target) = 
+    desk_has_can($deskname, $person_name, $ticket_id, 'identify');
+  return $desk if $desk->{error};
+
+  # Confirm ticket is identified
+  return {error=>"Ticket $ticket_id is not identified"}
+    unless $ticket->{show_solution};
+
+  # Confirm that operator picked correct solution
+  return { error=>"$solution is wrong solution for ticket $ticket_id"}
+    if $solution ne $ticket->{solution};
+
+  # Calculate resolution time
+  my $efficiency = $desk->{solution}{$solution}{efficiency};
+  my $duration = 10 * $ticket->{difficulty} / ( $person->{skill} * $efficiency );
+
+  # Start work
+  start_action($desk, $person_name, $ticket_id, 'breakfix', $duration);
+}
+
+# Start invention of solution
+#
+sub invent {
+  my($deskname,$person_name,$ticket_id) = @_;
+
+  my($desk,$person,$ticket,$target) = 
+    desk_has_can($deskname, $person_name, $ticket_id, 'identify');
+  return $desk if $desk->{error};
+
+  # Confirm ticket is invention request
+  return
+    {error=>"Ticket $ticket_id is not request for invention"}
+    unless $ticket->{request} eq 'invent';
+  my $solution = $ticket->{solution};
+
+  # Start work
+  my $duration = 10 * $ticket->{difficulty} / $person->{skill};
+  start_action($desk, $person_name, $ticket_id, 'invent', $duration);
 }
 
 
@@ -408,7 +474,7 @@ sub request {
 ### Solutions
 ########################################################################
 
-# Add solution to desk, or increase efficiency
+# Add solution to desk, or increase efficiency when solution already exists
 #
 sub enlist {
   my($deskname, $solutionname) = @_;
@@ -434,27 +500,14 @@ sub turn {
   $_game->{updated} = $now;
   my $duration = $now - $last;
 
-  # Change status to done for completed actions 
+  # Check for completed actions
   for my $desk ( values %{$_game->{desk}} ) {
     next unless $desk->{ticket};
     for my $ticket_id ( keys %{$desk->{ticket}} ) {
       my $ticket = $desk->{ticket}{$ticket_id};
       next unless $ticket->{action};
       for my $action_name ( keys %{$ticket->{action}} ) {
-        my $action = $ticket->{action}{$action_name};
-        if ( $action->{status} eq 'active') {
-          if ( $action->{end} < $now ) {
-            $action->{status} = 'done';
-            my $person_name = $action->{person};
-            delete $desk->{person}{$person_name}{ticket};
-            delete $ticket->{doing};
-            if ( $action_name eq 'identify' ) {
-              $ticket->{show_solution} = 1;
-            } elsif ( $action_name eq 'breakfix') {
-              delete $desk->{ticket}{$ticket_id};
-            }
-          }
-        }
+       complete_action($desk, $ticket_id, $action_name);
       }
     }
   }
@@ -503,6 +556,9 @@ post '/update' => sub {
       if ( my $person = $c->param('person') ) {
         if ( $c->param('identify') ) {
           $resp = identify($desk, $person, $ticket);
+        }
+        if ( $c->param('invent') ) {
+          $resp = invent($desk, $person, $ticket);
         }
         if ( $c->param('breakfix') and my $solution = $c->param('solution') ) {
           $resp = breakfix($desk, $person, $ticket, $solution);
