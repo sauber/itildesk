@@ -24,15 +24,15 @@ sub new_people {
 # Create desks with abilities
 #
 sub new_desks {
-  service => {
-    action => {
-      transfer => 1,
-      identify => 1,
-      request  => 'engineering',
-      assign   => 1,
-      handover => 'deploy',
-    },
-  },
+  #service => {
+  #  action => {
+  #    transfer => 1,
+  #    identify => 1,
+  #    request  => 'engineering',
+  #    assign   => 1,
+  #    handover => 'deploy',
+  #  },
+  #},
   incident => {
     action => {
       transfer => 1,
@@ -52,26 +52,26 @@ sub new_desks {
       handover   => 'deploy',
     },
   },
-  deploy => {
-    action => {
-      transfer => 1,
-      apply    => 1,
-    },
-  },
-  engineering => {
-    action => {
-      transfer => 1,
-      assign   => 1,
-    }
-  },
-  capacity => {
-    action => {
-      transfer  => 1,
-      assign    => 1,
-      increase  => 1,
-      descrease => 1,
-    }
-  },
+  #deploy => {
+  #  action => {
+  #    transfer => 1,
+  #    apply    => 1,
+  #  },
+  #},
+  #engineering => {
+  #  action => {
+  #    transfer => 1,
+  #    assign   => 1,
+  #  }
+  #},
+  #capacity => {
+  #  action => {
+  #    transfer  => 1,
+  #    assign    => 1,
+  #    increase  => 1,
+  #    descrease => 1,
+  #  }
+  #},
 }
 
 # Create issue seeded with difficulty and frequency
@@ -128,12 +128,12 @@ sub new_game {
 # Random title for a ticket
 #
 sub create_title {
-  my @part = qw(all on some a just no again);
+  my @part = qw(all on some a just no again this that one two);
   my @adj  = qw(weird known expected spurious weak new old critical);
-  my @comp = qw(issue error occurence invoke situation full start stop panic loss);
-  my @name = (sprintf "0x%s%s%s%s", map chr(64+32*rand), 1..4);
+  my @comp = qw(issue error occurence invoke situation full start stop panic loss flop flip flap flup recover);
+  my @name = (sprintf "0x%s%s%s%s", map chr(63+32*rand), 1..4);
   my @dir  = qw(for on from with by);
-  my @obj  = qw(user device disk cpu ram process network server nic kernel package password buffer start end mouse account cable);
+  my @obj  = qw(user device disk cpu ram process network server nic kernel package password buffer start end mouse account cable connect);
 
   return ucfirst join ' ', 
     $part[rand @part],
