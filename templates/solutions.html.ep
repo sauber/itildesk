@@ -11,11 +11,14 @@
 % for my $id ( keys %$solutions ) {
 %   my $solution = $solutions->{$id};
     <tr>
-      <td><input type=radio value="<%= $id %>" name="solution" /></td>
-      <th><%= $id %></th>
-      <td />
-      <td><%= sprintf "%.02f", $solution->{efficiency} %>
-      <td />
+      <td><input type=radio id="<%= $id.'.s' %>" value="<%= $id %>" name="solution" /></td>
+      <td>
+	<label for="<%= $id.'.s' %>">
+	  <%= $id %></td>
+	</label>
+      <td>
+	  <%= sprintf "%.02f", $solution->{efficiency} %>
+      </td>
     </tr>
 % }
   </tbody>
