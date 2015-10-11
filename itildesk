@@ -412,10 +412,10 @@ sub request {
   return {error=>"Ticket $ticket_id is not identified"}
     unless $ticket->{show_solution};
 
-  # Spawn ticket to target team
+  # Spawn invent ticket to target team
   my $solution = $ticket->{solution};
   my $request = {
-    title      => "Invent $solution for $deskname",
+    title      => "Invent $solution for $deskname desk",
     request    => 'invent',
     desk       => $deskname,
     solution   => $solution,
@@ -424,6 +424,34 @@ sub request {
 
   add_ticket($target, $request);
   return {error=>"Requested $target to invent solution for $solution"};
+}
+
+# Tag a solution to an issue or service and handover
+#
+sub handover {
+  my($deskname,$ticket_id,$solution) = @_;
+
+  my($desk,$person,$ticket,$target) = 
+    desk_has_can($deskname, undef, $ticket_id, 'handover');
+  return $desk if $desk->{error};
+
+  # Confirm ticket is identified
+  return {error=>"Ticket $ticket_id is not identified"}
+    unless $ticket->{show_solution};
+
+  # Confirm that operator picked correct solution
+  return { error=>"$solution is wrong solution for ticket $ticket_id"}
+    if $solution ne $ticket->{solution};
+
+  # Remove current assignment and action
+  if ( my $action_name = $ticket->{doing} ) {
+    cancel_action($desk, $ticket, $action_name);
+  }
+
+  # Complete ticket transfer
+  delete $desk->{ticket}{$ticket_id};
+  $_game->{desk}{$target}{ticket}{$ticket_id} = $ticket;
+  return { error=>"Transfered ticket $ticket_id from $deskname to $target" };
 }
 
 # Start identification of a ticket
@@ -562,30 +590,22 @@ post '/update' => sub {
   my $resp = {error => 'Missing data, nothing done'};
   if ( my $desk = $c->param('desk') ) {
     if ( my $ticket = $c->param('ticket') ) {
-      if ( $c->param('pass') ) {
-        $resp = pass( $desk, $ticket );
-      }
-      if ( $c->param('request') ) {
-        $resp = request( $desk, $ticket );
-      }
+      $resp = pass( $desk, $ticket ) if $c->param('pass');
+      $resp = request( $desk, $ticket ) if $c->param('request');
       if ( my $person = $c->param('person') ) {
-        if ( $c->param('identify') ) {
-          $resp = identify($desk, $person, $ticket);
+        $resp = identify($desk, $person, $ticket) if $c->param('identify');
+        $resp = invent  ($desk, $person, $ticket) if $c->param('invent');
+        if ( my $solution = $c->param('solution') ) {
+          $resp = ticket_resolution($desk, $person, $ticket, $solution, 'breakfix') if $c->param('breakfix');
+          $resp = ticket_resolution($desk, $person, $ticket, $solution, 'workaround') if $c->param('workaround');
+          $resp = ticket_resolution($desk, $person, $ticket, $solution, 'apply') if $c->param('apply');
         }
-        if ( $c->param('invent') ) {
-          $resp = invent($desk, $person, $ticket);
-        }
-        if ( $c->param('breakfix') and my $solution = $c->param('solution') ) {
-          $resp = ticket_resolution($desk, $person, $ticket, $solution, 'breakfix');
-        }
-        if ( $c->param('workaround') and my $solution = $c->param('solution') ) {
-          $resp = ticket_resolution($desk, $person, $ticket, $solution, 'workaround');
-        }
+      }
+      if ( my $solution = $c->param('solution') ) {
+        $resp = handover( $desk, $ticket, $solution ) if $c->param('handover');
       }
     } elsif ( my $person = $c->param('person') ) {
-      if ( $c->param('transfer') ) {
-        $resp = transfer($desk, $person);
-      }
+      $resp = transfer($desk, $person) if $c->param('transfer');
     }
   }
   
