@@ -12,11 +12,13 @@
 %   my $person = $people->{$id};
 %   if (!exists $people->{$id}{ticket}) {
     <tr>
+  
       <td><input id="<%= $id.'.p' %>" type=radio value="<%= $id %>" name="person" /></td>
-      <td><label for="<%= $id.'.p' %>"> <%= $id %></label></td>
-      <td />
-      <td><%= sprintf "%.02f", $person->{skill} %>
-      <td />
+      <td>
+	<label for="<%= $id.'.p' %>">
+	  <%= $id %></td>
+      </label>
+      <td><%= sprintf "%.02f", $person->{skill} %><td/>
     </tr>
 %   }
 % }
