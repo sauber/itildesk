@@ -26,13 +26,19 @@
     %   }
     %   if ($already_assigned==0) {
       <tr>
-        <td><input type=radio value="<%= $t %>" name="ticket" /></td>
+        <td>
+	  <input id="<%= $t %>" type=radio value="<%= $t %>" name="ticket" />
+	</td>
 	<th><%= $t %></th>
-	% if (exists $tickets->{$t}{show_solution}) {
-	<td><%= $tickets->{$t}{solution} %></td>
-	% } else {
-	<td><%= $tickets->{$t}{title} %></td>
-	% }
+	<td>
+	  <label for="<%= $t %>">
+	    % if (exists $tickets->{$t}{show_solution}) {
+	    <%= $tickets->{$t}{solution} %>
+	    % } else {
+	    <%= $tickets->{$t}{title} %>
+	    % }
+	  </label>
+	</td>
       </tr>
       % }
 %   }
