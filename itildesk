@@ -52,18 +52,18 @@ sub new_desks {
       handover   => 'deploy',
     },
   },
-  #deploy => {
-  #  action => {
-  #    transfer => 1,
-  #    apply    => 1,
-  #  },
-  #},
-  #engineering => {
-  #  action => {
-  #    transfer => 1,
-  #    assign   => 1,
-  #  }
-  #},
+  deploy => {
+    action => {
+      transfer => 1,
+      apply    => 1,
+    },
+  },
+  engineering => {
+    action => {
+      transfer => 1,
+      invent   => 1,
+    }
+  },
   #capacity => {
   #  action => {
   #    transfer  => 1,
@@ -130,10 +130,13 @@ sub new_game {
 sub create_title {
   my @part = qw(all on some a just no again this that one two);
   my @adj  = qw(weird known expected spurious weak new old critical);
-  my @comp = qw(issue error occurence invoke situation full start stop panic loss flop flip flap flup recover);
-  my @name = (sprintf "0x%s%s%s%s", map chr(63+32*rand), 1..4);
+  my @comp = qw(issue error occurence invoke situation full start stop panic
+                loss flop flip flap flup recover click tick drop drag);
+  my @name = (join '', '0x', map chr(63+32*rand), 0..rand(8));
   my @dir  = qw(for on from with by);
-  my @obj  = qw(user device disk cpu ram process network server nic kernel package password buffer start end mouse account cable connect);
+  my @obj  = qw(user device disk cpu ram process network server nic kernel
+                package password buffer start end mouse account cable connect
+                swap keyboard version);
 
   return ucfirst join ' ', 
     $part[rand @part],
@@ -160,18 +163,23 @@ sub create_issue {
   my($deskname) = @_;
 
   # Pick ticket type based on frequency
-  my $type = (
+  my $solution = (
     map $_->[0],
     sort { $b->[1] <=> $a->[1] }
     map [ $_, $_game->{issue_types}{$_}{frequency}*rand ],
     keys %{$_game->{issue_types}}
   )[0];
+
+  # Don't create tickets for which workarounds exists
+  return { error=>"Workaround in place for issue type $solution" }
+    if $_game->{workaround}{$solution};
+
   # Create ticket
   my $ticket = {
     title      => create_title(),
     request    => 'issue',
-    solution   => $type,
-    difficulty => $_game->{issue_types}{$type}{difficulty},
+    solution   => $solution,
+    difficulty => $_game->{issue_types}{$solution}{difficulty},
   };
   # Place ticket on desk
   add_ticket( $deskname, $ticket );
@@ -280,6 +288,13 @@ sub complete_action {
     $ticket->{show_solution} = 1;
   } elsif ( $action_name eq 'breakfix' ) {
     delete $desk->{ticket}{$ticket_id};
+  } elsif ( $action_name eq 'workaround' ) {
+    delete $desk->{ticket}{$ticket_id};
+    $desk->{workaround}{$ticket->{solution}} = 1;
+  } elsif ( $action_name eq 'apply' ) {
+    delete $desk->{ticket}{$ticket_id};
+    $desk->{apply}{$ticket->{solution}} = 1;
+    # TODO Delete all ticket of this solution
   } elsif ( $action_name eq 'invent' ) {
     my $deskname = $ticket->{desk};
     enlist( $ticket->{desk}, $ticket->{solution} );
@@ -424,13 +439,13 @@ sub identify {
   start_action($desk, $person_name, $ticket_id, 'identify', $duration);
 }
 
-# Apply breakfix
+# Breakfix, workaround and apply all start the same. The end is different.
 #
-sub breakfix {
-  my($deskname, $person_name, $ticket_id, $solution) = @_;
+sub ticket_resolution {
+  my($deskname, $person_name, $ticket_id, $solution, $action_name) = @_;
 
   my($desk,$person,$ticket,$target) = 
-    desk_has_can($deskname, $person_name, $ticket_id, 'identify');
+    desk_has_can($deskname, $person_name, $ticket_id, $action_name);
   return $desk if $desk->{error};
 
   # Confirm ticket is identified
@@ -446,7 +461,7 @@ sub breakfix {
   my $duration = 10 * $ticket->{difficulty} / ( $person->{skill} * $efficiency );
 
   # Start work
-  start_action($desk, $person_name, $ticket_id, 'breakfix', $duration);
+  start_action($desk, $person_name, $ticket_id, $action_name, $duration);
 }
 
 # Start invention of solution
@@ -455,7 +470,7 @@ sub invent {
   my($deskname,$person_name,$ticket_id) = @_;
 
   my($desk,$person,$ticket,$target) = 
-    desk_has_can($deskname, $person_name, $ticket_id, 'identify');
+    desk_has_can($deskname, $person_name, $ticket_id, 'invent');
   return $desk if $desk->{error};
 
   # Confirm ticket is invention request
@@ -561,7 +576,10 @@ post '/update' => sub {
           $resp = invent($desk, $person, $ticket);
         }
         if ( $c->param('breakfix') and my $solution = $c->param('solution') ) {
-          $resp = breakfix($desk, $person, $ticket, $solution);
+          $resp = ticket_resolution($desk, $person, $ticket, $solution, 'breakfix');
+        }
+        if ( $c->param('workaround') and my $solution = $c->param('solution') ) {
+          $resp = ticket_resolution($desk, $person, $ticket, $solution, 'workaround');
         }
       }
     } elsif ( my $person = $c->param('person') ) {
