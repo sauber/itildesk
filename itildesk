@@ -144,9 +144,18 @@ sub create_title {
     $obj [rand @obj ],
 }
 
-# Add a new issue into a desk
+# Add a ticket to a desk
 #
 our $_id_counter;
+sub add_ticket {
+  my($deskname, $ticket) = @_;
+
+  # Place ticket on desk
+  $_game->{desk}{$deskname}{ticket}{++$_id_counter} = $ticket;
+}
+
+# Add a new issue into a desk
+#
 sub create_issue {
   my($deskname) = @_;
 
@@ -165,7 +174,7 @@ sub create_issue {
     difficulty => $_game->{issue_types}{$type}{difficulty},
   };
   # Place ticket on desk
-  $_game->{desk}{$deskname}{ticket}{++$_id_counter} = $ticket;
+  add_ticket( $deskname, $ticket );
 }
 
 # Add a new issue into a desk
@@ -188,7 +197,7 @@ sub create_service {
     difficulty => $_game->{service_types}{$type}{difficulty},
   };
   # Place ticket on desk
-  $_game->{desk}{$deskname}{ticket}{++$_id_counter} = $ticket;
+  add_ticket( $deskname, $ticket );
 }
 
 
@@ -324,7 +333,7 @@ sub breakfix {
 
 }
 
-# Kick a person over to different desk
+# Kick a person over to different random desk
 #
 sub transfer {
   my($deskname,$person_name) = @_;
@@ -360,6 +369,38 @@ sub transfer {
   delete $desk->{person}{$person_name};
   $newdesk->{person}{$person_name} = $person;
   return { error=>"Moving $person_name from $deskname to $newdeskname" };
+}
+
+sub request {
+  my($deskname,$ticket_id) = @_;
+
+  # Confirm desk can request
+  my $desk = $_game->{desk}{$deskname};
+  return
+    {error=>"$desk desk cannot request inventions"}
+    unless my $newdeskname = $desk->{action}{request};
+
+  # Confirm ticket is on desk
+  return
+    {error=>"$deskname desk doesn't hold ticket $ticket_id"}
+    unless my $ticket = $desk->{ticket}{$ticket_id};
+  
+  # Confirm ticket is identified
+  return
+    {error=>"Ticket $ticket_id is not identified"}
+    unless $ticket->{show_solution};
+  my $solution = $ticket->{solution};
+
+  # Spawn ticket to target team
+  my $request = {
+    title    => "Invent: $solution",
+    request  => 'invent',
+    solution => $solution,
+    difficulty => $_game->{issue_types}{$solution}{difficulty},
+  };
+
+  add_ticket($deskname, $ticket);
+  return {error=>"Requested $newdeskname to invent solution for $solution"};
 }
 
 
@@ -455,6 +496,9 @@ post '/update' => sub {
     if ( my $ticket = $c->param('ticket') ) {
       if ( $c->param('pass') ) {
         $resp = pass( $desk, $ticket );
+      }
+      if ( $c->param('request') ) {
+        $resp = request( $desk, $ticket );
       }
       if ( my $person = $c->param('person') ) {
         if ( $c->param('identify') ) {
