@@ -16,7 +16,7 @@ our $_game;
 sub new_people {
   map { $_ => { skill => rand }}
   qw(
-    Jack William Hiroto Ren Wei Jie Aarav Aaryan Jing Ying Aadhya Ananya
+    Jack William Hiroto Ren Jie Aarav Aaryan Jing Ying Aadhya Ananya
     Yuina Hina Ben Louis Emma Mia Charlotte Ruby Michelle Shane Nicholas
   )
 }
@@ -154,7 +154,7 @@ sub create_title {
 
 # Add a ticket to a desk
 #
-our $_id_counter;
+our $_id_counter = 0;
 sub add_ticket {
   my($deskname, $ticket) = @_;
 
@@ -601,6 +601,12 @@ sub turn {
     map values(%{$_->{ticket}}),
     values %{$_game->{desk}};
   $_game->{score} = 100 - $ticket_count;
+
+  # Game finised
+  if ( $_game->{score} >= 100 ) {
+    $_game->{finish} ||= time();
+    $_game->{duration} ||= $_game->{finish} - $_game->{start};
+  }
 }
 
 
@@ -613,9 +619,9 @@ app->secrets(['litedesk secret passphrase goes here']);
 new_game();
 create_issue('incident') for 1..5;
 create_service('service') for 1..5;
-pass('incident', 1);
-enlist('incident', 'Kernel Hung') for 1..2;
-identify('incident', (keys %{$_game->{desk}{incident}{person}})[0], '2') ;
+#pass('incident', 1);
+#enlist('incident', 'Kernel Hung') for 1..2;
+#identify('incident', (keys %{$_game->{desk}{incident}{person}})[0], '2') ;
 
 post '/update' => sub {
   my $c = shift;
@@ -655,6 +661,21 @@ post '/update' => sub {
 # Page explaining game rules
 get '/rules' => sub { } => 'rules';
 
+# Create new game
+#
+get '/reset' => sub {
+  my $c = shift;
+
+  new_game();
+  $_id_counter = 0;
+  create_issue('incident') for 1..5;
+  create_service('service') for 1..5;
+  $c->redirect_to($c->url_for('/'));
+} => 'reset';
+
+
+# Display all consoles
+#
 get '/' => sub {
   my $c = shift;
 
