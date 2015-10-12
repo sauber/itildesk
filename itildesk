@@ -585,7 +585,14 @@ sub turn {
   create_issue  ('incident') if rand( 10) < rand($duration);
   create_service('service')  if rand( 20) < rand($duration);
 
-  # TODO Solution efficiency up or down
+  # Solution efficiency deteriorates
+  for my $desk ( values %{$_game->{desk}} ) {
+    for my $solution ( keys %{$desk->{solution}} ) {
+      $desk->{solution}{$solution}{efficiency} -= $skillchange;
+      delete $desk->{solution}{$solution}
+          if $desk->{solution}{$solution}{efficiency} < 0;
+    }
+  }
 
   # Game Score
   my $ticket_count = 0;
