@@ -19,5 +19,26 @@ Actions each desk can do:
  * invent: a method (solution) to fix a new incident ticket is created (invented)
  * breakfix: an identified ticket can get fixed with a known solution by an engineer
  * request: request to invent a solution. Ticket is assigned to Incident Desk.
- * transfer: Move the selected person to another (random) team.
+ * transfer: Move the selected person to another (random) team. This is common to all desks.
 
+* Problem Desk
+ * identify: Same as Incident Desk
+ * request: Same as Incident Desk
+ * workaround: Apply a known solution to an identified problem (similar to breakfix at the Incident Desk)
+ * handover: ?
+ * transfer: Same as Incident Desk
+
+* Engineering Desk
+ * invent: Same as Incident Desk
+ * transfer: Same as Incident Desk
+
+* Deploy Desk
+ * apply: ?
+ * transfer: Same as Incident Desk
+
+* Service Desk
+ * assign: ?
+ * handover: ?
+ * identify: Same as Incident Desk
+ * request: Same as Incident Desk
+ * transfer: Same as Incident Desk
