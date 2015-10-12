@@ -82,6 +82,7 @@ sub new_issue_types {
    'Disk Full',
    'User Cannot Login',
    'Package Outdated',
+   'File Lost',
 }
 
 # Create type of issues seeded with difficulty and frequency
@@ -91,6 +92,8 @@ sub new_service_types {
    'Hosting',
    'Decom',
    'Change',
+   'Resize',
+   'Reset',
 }
 
 # Create a new randomly seeded game
@@ -129,14 +132,15 @@ sub new_game {
 #
 sub create_title {
   my @part = qw(all on some a just no again this that one two);
-  my @adj  = qw(weird known expected spurious weak new old critical);
+  my @adj  = qw(weird known expected spurious weak new old critical extra
+                lost);
   my @comp = qw(issue error occurence invoke situation full start stop panic
                 loss flop flip flap flup recover click tick drop drag);
   my @name = (join '', '0x', map chr(63+32*rand), 0..rand(8));
   my @dir  = qw(for on from with by);
   my @obj  = qw(user device disk cpu ram process network server nic kernel
                 package password buffer start end mouse account cable connect
-                swap keyboard version);
+                swap keyboard version link read write);
 
   return ucfirst join ' ', 
     $part[rand @part],
@@ -419,12 +423,14 @@ sub request {
 
   # Spawn invent ticket to target team
   my $solution = $ticket->{solution};
+  my $difficulty = $_game->{issue_types}{$solution}{difficulty}
+                || $_game->{service_types}{$solution}{difficulty};
   my $request = {
     title      => "Invent $solution for $deskname desk",
     request    => 'invent',
     desk       => $deskname,
     solution   => $solution,
-    difficulty => $_game->{issue_types}{$solution}{difficulty},
+    difficulty => $difficulty,
   };
 
   add_ticket($target, $request);
