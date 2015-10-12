@@ -121,6 +121,7 @@ sub new_game {
   $_game->{issue_types} = { new_issue_types() };
   $_game->{service_types} = { new_service_types() };
   $_game->{updated} = time();
+  $_game->{start}   = time(); # Game start
 }
 
 
