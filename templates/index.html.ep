@@ -4,7 +4,8 @@
 <div style="color: red"><%= $message %></div>
 % }
 
-<h1>Welcome to ITIL Desk</h1>
+<div style="float: right"><a href="<%= url_for 'rules' %>">Rules</a></div>
+<h1>ITIL Desk Simulation Game</h1>
 
 <div style="color: red; font-size: 24px">
   Current score: <%= $game->{score} %>
@@ -18,6 +19,6 @@
 <hr />
 
 <pre>
-%= dumper $game
+%= dumper $game if 1
 </pre>
 

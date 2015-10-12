@@ -652,6 +652,9 @@ post '/update' => sub {
   $c->redirect_to($c->url_for('/'));
 } => 'update';
 
+# Page explaining game rules
+get '/rules' => sub { } => 'rules';
+
 get '/' => sub {
   my $c = shift;
 
