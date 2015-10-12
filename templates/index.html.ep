@@ -9,7 +9,10 @@
 <h1>ITIL Desk Simulation Game</h1>
 
 <div style="color: red; font-size: 24px">
-  Current score: <%= $game->{score} %>, Time: <%= int time()-$game->{start} %>s
+  Current score: <%= $game->{score} %>, Time: <%= int time()-$game->{start} %>s.
+% if ( $game->{duration} ) {
+Game won in <%= int $game->{duration} %>s.
+% }
 </div>
 
 
