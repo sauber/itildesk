@@ -9,8 +9,9 @@
 <h1>ITIL Desk Simulation Game</h1>
 
 <div style="color: red; font-size: 24px">
-  Current score: <%= $game->{score} %>
+  Current score: <%= $game->{score} %>, Time: <%= int time()-$game->{start} %>s
 </div>
+
 
 % for my $deskname ( sort keys %{$game->{desk}} ) {
 <span style="display: inline-block"><%= include 'desk', deskname=>$deskname, desk=>$game->{desk}{$deskname} %></span>
