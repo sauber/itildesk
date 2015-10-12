@@ -558,6 +558,17 @@ sub turn {
   $_game->{updated} = $now;
   my $duration = $now - $last;
 
+  # Engineer skill change
+  my $skillchange = $duration * 0.001;
+  for my $desk ( values %{$_game->{desk}} ) {
+    for my $person ( values %{$desk->{person}} ) {
+      $person->{skill} += $person->{ticket} 
+        ? 10*-$skillchange : $skillchange;
+      $person->{skill} = 1 if $person->{skill} > 1;
+      $person->{skill} = 0 if $person->{skill} < 0;
+    }
+  }
+
   # Check for completed actions
   for my $desk ( values %{$_game->{desk}} ) {
     next unless $desk->{ticket};
@@ -570,7 +581,6 @@ sub turn {
     }
   }
 
-  # TODO People skill up or down
   # TODO Solution efficiency up or down
 
   # Game Score
