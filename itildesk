@@ -568,7 +568,10 @@ sub turn {
 
   # Game Score
   my $ticket_count = 0;
-  $ticket_count += scalar map keys(%{$_->{ticket}}), values %{$_game->{desk}};
+  $ticket_count += scalar
+    grep { $_->{request} ne 'invent' }
+    map values(%{$_->{ticket}}),
+    values %{$_game->{desk}};
   $_game->{score} = 100 - $ticket_count;
 }
 
