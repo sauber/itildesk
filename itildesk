@@ -581,6 +581,10 @@ sub turn {
     }
   }
 
+  # Inject new tickets
+  create_issue  ('incident') if rand( 10) < rand($duration);
+  create_service('service')  if rand( 20) < rand($duration);
+
   # TODO Solution efficiency up or down
 
   # Game Score
