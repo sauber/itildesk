@@ -4,10 +4,17 @@
 <h1>ITIL Desk Simulation Game Rules</h1>
 
 <ul>
-<li>Game is won when score is 100.</li>
+<li>Game is won when score is 100 = all tickets closed.</li>
 <li>Breakfix has no effect.</li>
 <li>Workaround prevent more tickets of same type.</li>
 <li>Apply closes all tickets of same type.</li>
 <li>Transfer person halfs skills.</li>
 <li>Same solution can be requests multiple times.</li>
+<li>Invent means to create a solution.<li>
+<li>This is a game for 5 people each playing different roles.</li>
+<li>Each player operates one desk.</li>
+<li>All desks are displayed on same page.</li>
+<li>All new tickets need to be identified.</li>
+<li>A ticket with no solution can be passed to other team.<li>
+<li>A ticket with a solution can be handover to other team.<li>
 <ul>
