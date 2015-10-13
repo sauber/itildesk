@@ -550,6 +550,112 @@ sub enlist {
 
 
 ########################################################################
+### Desk Bots
+########################################################################
+
+# AI moves for incidents
+#
+sub incidentbot {
+  my $desk = $_game->{desk}{incident};
+
+  # Pass
+  while ( my($tid,$ticket) = each %{$desk->{ticket}} ) {
+    if ( $ticket->{show_solution} ) {
+      pass('incident', $tid);
+      return;
+    }
+  }
+  # Identify
+  my @free = 
+    grep { $desk->{person}{$_}{skill} > 0.3 }
+    grep ! $desk->{person}{$_}{ticket},
+    keys %{$desk->{person}};
+  if ( @free ) {
+    keys %{$desk->{ticket}};
+    while ( my($tid,$ticket) = each %{$desk->{ticket}} ) {
+      if ( ! $ticket->{show_solution}  and ! $ticket->{action}{identify} ) {
+        identify('incident', $free[0], $tid);
+        return;
+      }
+    }
+  }
+
+  # Transfer
+  #transfer('incident', $free[0] ) if @free;
+}
+
+# AI moves for incidents
+#
+sub problembot {
+  my $desk = $_game->{desk}{problem};
+
+  # Free Engineers
+  keys %{$desk->{ticket}};
+  my @free = 
+    grep { $desk->{person}{$_}{skill} > 0.3 }
+    grep ! $desk->{person}{$_}{ticket},
+    keys %{$desk->{person}};
+  while ( my($tid,$ticket) = each %{$desk->{ticket}} ) {
+    next if $ticket->{doing};
+    my $solution = $ticket->{solution};
+    #use Data::Printer;
+    #p $solution;
+    #p $desk->{solution};
+    #p $desk->{solution}{$solution};
+    #p $desk->{solution}{$solution}{efficiency};
+    if ( $desk->{solution}{$solution} and $desk->{solution}{$solution}{efficiency} > 0.3 ) {
+      if ( @free ) {
+        #warn "problem workaround $tid $solution\n";
+        ticket_resolution('problem', $free[0], $tid, $solution, 'workaround');
+        return;
+      } else {
+        #warn "problem handover $tid $solution\n";
+        my $resp = handover('problem', $tid, $solution);
+        #p $resp;
+        return;
+      }
+    }
+  }
+  while ( my($tid,$ticket) = each %{$desk->{ticket}} ) {
+    next if $ticket->{doing};
+    #warn "problem request $tid\n";
+    my $resp = request('problem', $tid);
+    #p $resp;
+    return;
+  }
+
+  # Transfer
+  #transfer('problem', $free[0] ) if @free;
+}
+
+# AI moves for incidents
+#
+sub engineeringbot {
+  my $desk = $_game->{desk}{engineering};
+
+  # Free Engineers
+  keys %{$desk->{ticket}};
+  my @free =
+    grep { $desk->{person}{$_}{skill} > 0.3 }
+    grep ! $desk->{person}{$_}{ticket},
+    keys %{$desk->{person}};
+
+  while ( my($tid,$ticket) = each %{$desk->{ticket}} ) {
+    next if $ticket->{doing};
+    if ( @free ) {
+      invent('engineering', $free[0], $tid);
+      return;
+    }
+  }
+
+  # Transfer
+  #transfer('engineering', $free[0] ) if @free;
+}
+
+
+
+
+########################################################################
 ### Game Maintenance
 ########################################################################
 
@@ -585,6 +691,11 @@ sub turn {
     }
   }
 
+  # Let bots helps
+  #incidentbot();
+  #problembot();
+  #engineeringbot();
+
   # Inject new tickets
   create_issue  ('incident') if rand( 10) < rand($duration);
   create_service('service')  if rand( 20) < rand($duration);
@@ -606,10 +717,13 @@ sub turn {
     values %{$_game->{desk}};
   $_game->{score} = 100 - $ticket_count;
 
-  # Game finised
+  # Game finished
   if ( $_game->{score} >= 100 ) {
     $_game->{finish} ||= time();
     $_game->{duration} ||= $_game->{finish} - $_game->{start};
+  } elsif ( $_game->{score} <= 0 ) {
+    $_game->{lost} ||= time();
+    $_game->{duration} ||= $_game->{lost} - $_game->{start};
   }
 }
 
