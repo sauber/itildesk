@@ -295,14 +295,18 @@ sub complete_action {
     delete $desk->{ticket}{$ticket_id};
   } elsif ( $action_name eq 'workaround' ) {
     delete $desk->{ticket}{$ticket_id};
-    $desk->{workaround}{$ticket->{solution}} = 1;
+    $_game->{workaround}{$ticket->{solution}} = 1;
   } elsif ( $action_name eq 'apply' ) {
     # Delete all ticket of this solution
     my $solution = $desk->{ticket}{$ticket_id}{solution};
     for my $deskn ( values %{$_game->{desk}} ) {
       for my $tid ( keys %{$deskn->{ticket}} ) {
-        delete $deskn->{ticket}{$tid}
-          if $deskn->{ticket}{$tid}{solution} eq $solution;
+        if ( $deskn->{ticket}{$tid}{solution} eq $solution ) {
+          delete $deskn->{ticket}{$tid};
+          for my $person ( values %{$deskn->{person}} ) {
+            delete $person->{ticket} if $person->{ticket} eq $tid;
+          }
+        }
       }
     }
   } elsif ( $action_name eq 'invent' ) {
@@ -565,7 +569,7 @@ sub turn {
       $person->{skill} += $person->{ticket} 
         ? 10*-$skillchange : $skillchange;
       $person->{skill} = 1 if $person->{skill} > 1;
-      $person->{skill} = 0 if $person->{skill} < 0;
+      $person->{skill} = 0.05 if $person->{skill} < 0;
     }
   }
 
@@ -588,7 +592,7 @@ sub turn {
   # Solution efficiency deteriorates
   for my $desk ( values %{$_game->{desk}} ) {
     for my $solution ( keys %{$desk->{solution}} ) {
-      $desk->{solution}{$solution}{efficiency} -= $skillchange;
+      $desk->{solution}{$solution}{efficiency} -= 0.2*$skillchange;
       delete $desk->{solution}{$solution}
           if $desk->{solution}{$solution}{efficiency} < 0;
     }
